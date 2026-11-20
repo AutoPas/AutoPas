@@ -101,6 +101,10 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.tuningSamples,
       config.tuningStrategyOptions,
       config.tuningStrategySeed,
+      config.initialTemperature,
+      config.endTemperature,
+      config.exclusionFactor,
+      config.levelChangeVariance,
       config.useLOESSSmoothening,
       config.useThermostat,
       config.useTuningLogger,
@@ -289,6 +293,58 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           config.tuningStrategySeed.value = stoul(strArg);
         } catch (const exception &) {
           cerr << "Error parsing tuning strategy seed: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.initialTemperature)::getoptChar: {
+        try {
+          config.initialTemperature.value = stod(strArg);
+          if (config.initialTemperature.value <= 0) {
+            cerr << "Initial temperature has to be greater than zero." << endl;
+            displayHelp = true;
+          }
+        } catch (const exception &) {
+          cerr << "Error parsing initial temperature: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.endTemperature)::getoptChar: {
+        try {
+          config.endTemperature.value = stod(strArg);
+          if (config.endTemperature.value <= 0) {
+            cerr << "End temperature has to be greater than zero." << endl;
+            displayHelp = true;
+          }
+        } catch (const exception &) {
+          cerr << "Error parsing end temperature: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.exclusionFactor)::getoptChar: {
+        try {
+          config.exclusionFactor.value = stod(strArg);
+          if (config.exclusionFactor.value <= 0) {
+            cerr << "Exclusion factor has to be greater than zero." << endl;
+            displayHelp = true;
+          }
+        } catch (const exception &) {
+          cerr << "Error parsing exclusion factor: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.levelChangeVariance)::getoptChar: {
+        try {
+          config.levelChangeVariance.value = stod(strArg);
+          if (config.levelChangeVariance.value <= 0) {
+            cerr << "Level change variance has to be greater than zero." << endl;
+            displayHelp = true;
+          }
+        } catch (const exception &) {
+          cerr << "Error parsing level change variance: " << optarg << endl;
           displayHelp = true;
         }
         break;

@@ -94,6 +94,7 @@ TEST(OptionTest, parseTuningStrategyOptionsTest) {
       {autopas::TuningStrategyOption::slowConfigFilter, "slow-filter"},
       {autopas::TuningStrategyOption::sortByName, "sortbyname"},
       {autopas::TuningStrategyOption::tuningStrategyLogger, "tuningstratLogger"},
+      {autopas::TuningStrategyOption::simulatedAnnealing, "simulated-annealing"},
   };
 
   EXPECT_EQ(mapEnumString.size(), autopas::TuningStrategyOption::getOptionNames().size());

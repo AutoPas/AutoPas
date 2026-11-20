@@ -463,6 +463,35 @@ class MDFlexConfig {
       "Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::ExtrapolationMethodOption::getAllOptions(), " ", {"(", ")"})};
   /**
+   * initialTemperature
+   */
+  MDFlexOption<double, __LINE__> initialTemperature{
+      0.2, "initial-temperature", true,
+      "For simulated annealing: Dimensionless T_0 > 0 used as the initial value for the temperature. "
+      "A larger value means temporarily changing to a worse "
+      "configuration during the annealing process is more likely."};
+  /**
+   * endTemperature
+   */
+  MDFlexOption<double, __LINE__> endTemperature{
+      0.01, "end-temperature", true,
+      "For simulated annealing: Dimensionless T_end > T_0 > 0 used as the target value for the temperature in the "
+      "last comparison of a tuning phase. The temperature decreases geometrically from T_0 to T_end over the whole "
+      "tuning phase."};
+  /**
+   * exclusionFactor
+   */
+  MDFlexOption<double, __LINE__> exclusionFactor{
+      3.0, "exclusion-factor", true,
+      "For simulated annealing:  Untested candidate configurations that have been measured in a recent tuning phase "
+      "(up to 2 phases back) are not tested in the current tuning phase, if the recorded measurements predict a Δ > "
+      "exclusionFactor * T_current. Can be disabled with exclusionFactor = infty."};
+  /**
+   * levelChangeVariance
+   */
+  MDFlexOption<double, __LINE__> levelChangeVariance{
+      0.75, "level-change-variance", true, "For simulated annealing: Variance of the level normal distributions."};
+  /**
    * vtkOutputFolder
    */
   MDFlexOption<std::string, __LINE__> vtkOutputFolder{"output", "vtk-output-folder", true,
@@ -492,7 +521,8 @@ class MDFlexConfig {
   MDFlexOption<bool, __LINE__> fastParticlesThrow{
       false, "fastParticlesThrow", false,
       "Decide if particles that move farther than skin/2/rebuildFrequency "
-      "will throw an exception during the position update or not for the case with statically rebuilding containers."};
+      "will throw an exception during the position update or not for the case with statically rebuilding "
+      "containers."};
   /**
    * verletSkinRadius
    */
@@ -600,22 +630,24 @@ class MDFlexConfig {
    * distance checks.
    * For details on the chosen default threshold see: https://github.com/AutoPas/AutoPas/pull/619
    */
-  MDFlexOption<size_t, __LINE__> aosSortingThreshold{
-      8, "aos-sorting-threshold", true,
-      "Threshold for traversals that use the CellFunctor to start sorting. If the sum of the number of particles in "
-      "two cells is greater or equal to that value, the CellFunctor creates a sorted view of the particles to avoid "
-      "unnecessary distance checks."};
+  MDFlexOption<size_t, __LINE__> aosSortingThreshold{8, "aos-sorting-threshold", true,
+                                                     "Threshold for traversals that use the CellFunctor to start "
+                                                     "sorting. If the sum of the number of particles in "
+                                                     "two cells is greater or equal to that value, the CellFunctor "
+                                                     "creates a sorted view of the particles to avoid "
+                                                     "unnecessary distance checks."};
   /**
    * soaSortingThreshold
    * If the sum of the SoA buffer sizes of two cells is greater or equal to this value, the SoA functor pair path
    * sorts particles by their projection onto the cell-pair direction vector before computing interactions.
    * Default comes from the LJFunctorHWY Benchmarks.
    */
-  MDFlexOption<size_t, __LINE__> soaSortingThreshold{
-      100, "soa-sorting-threshold", true,
-      "Threshold for the SoA functor pair path to start sorting. If the sum of the SoA buffer sizes of two cells is "
-      "greater or equal to that value, particles are sorted by their projection onto the cell-pair direction vector "
-      "before computing interactions."};
+  MDFlexOption<size_t, __LINE__> soaSortingThreshold{100, "soa-sorting-threshold", true,
+                                                     "Threshold for the SoA functor pair path to start sorting. If "
+                                                     "the sum of the SoA buffer sizes of two cells is "
+                                                     "greater or equal to that value, particles are sorted by "
+                                                     "their projection onto the cell-pair direction vector "
+                                                     "before computing interactions."};
   /**
    * useSortingThresholdBenchmark
    * If true, AutoPas runs a micro-benchmark to determine the optimal AoS/SoA pair-sorting threshold per cell layout
@@ -624,7 +656,8 @@ class MDFlexConfig {
    */
   MDFlexOption<bool, __LINE__> useSortingThresholdBenchmark{
       false, "use-sorting-threshold-benchmark", true,
-      "If true, AutoPas runs a micro-benchmark to determine the optimal AoS/SoA pair-sorting threshold per cell layout "
+      "If true, AutoPas runs a micro-benchmark to determine the optimal AoS/SoA pair-sorting threshold per cell "
+      "layout "
       "(Face, Edge, Corner) instead of the fixed aos/soa-sorting-threshold. SoA Thresholds are only determined for "
       "functors that support SoA sorting."};
 
@@ -867,7 +900,8 @@ class MDFlexConfig {
    */
   MDFlexOption<LoadBalancerOption, __LINE__> loadBalancer{
       LoadBalancerOption::invertedPressure, "load-balancer", true,
-      "Defines which load balancing approach will be used with the adaptive grid decomposition. If ALL is chosen as "
+      "Defines which load balancing approach will be used with the adaptive grid decomposition. If ALL is chosen "
+      "as "
       "load balancer, MD-Flexible uses ALL's TENSOR method. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(LoadBalancerOption::getAllOptions(), " ", {"(", ")"})};
 

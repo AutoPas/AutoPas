@@ -173,6 +173,10 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setEarlyStoppingFactor(_configuration.earlyStoppingFactor.value);
   _autoPasContainer->setMaxEvidence(_configuration.tuningMaxEvidence.value);
   _autoPasContainer->setTuningStrategySeed(_configuration.tuningStrategySeed.value);
+  _autoPasContainer->setInitialTemperature(_configuration.initialTemperature.value);
+  _autoPasContainer->setEndTemperature(_configuration.endTemperature.value);
+  _autoPasContainer->setExclusionFactor(_configuration.exclusionFactor.value);
+  _autoPasContainer->setLevelChangeVariance(_configuration.levelChangeVariance.value);
   _autoPasContainer->setRuleFileName(_configuration.ruleFilename.value);
   _autoPasContainer->setFuzzyRuleFileName(_configuration.fuzzyRuleFilename.value);
   _autoPasContainer->setSelectorStrategy(_configuration.selectorStrategy.value);
@@ -356,8 +360,10 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
   if (_configuration.tuningPhases.value > 0) {
     const size_t configsTestedPerTuningPhase = [&]() {
       if (std::any_of(_configuration.tuningStrategyOptions.value.begin(),
-                      _configuration.tuningStrategyOptions.value.end(),
-                      [](const auto &stratOpt) { return stratOpt == autopas::TuningStrategyOption::randomSearch; })) {
+                      _configuration.tuningStrategyOptions.value.end(), [](const auto &stratOpt) {
+                        return stratOpt == autopas::TuningStrategyOption::randomSearch ||
+                               stratOpt == autopas::TuningStrategyOption::simulatedAnnealing;
+                      })) {
         return static_cast<size_t>(_configuration.tuningMaxEvidence.value);
       } else {
         // @TODO: this can be improved by considering the tuning strategy

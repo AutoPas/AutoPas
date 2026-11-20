@@ -22,12 +22,16 @@ verlet-skin-radius                   :  0.2
 verlet-cluster-size                  :  4
 selector-strategy                    :  Fastest-Absolute-Value
 tuning-metric                        :  time # alternatively: energy
-tuning-strategies                    :  [slow-config-filter, rule-based-tuning, predictive-tuning]
+tuning-strategies                    :  [slow-config-filter, rule-based-tuning, predictive-tuning, simulated-annealing]
 tuning-interval                      :  5000
 tuning-samples                       :  3
 output-suffix                        :  usefulNameForLogFiles
 use-LOESS-smoothening                :  false
 tuning-max-evidence                  :  10
+initial-temperature                  :  0.2
+end-temperature                      :  0.01
+exclusionFactor                      :  3.0
+levelChangeVariance                  :  0.75
 energy-sensor                        :  rapl  # alternatively: likwid
 cutoff                               :  1
 box-min                              :  [-1.75, -1.75, -1.75]

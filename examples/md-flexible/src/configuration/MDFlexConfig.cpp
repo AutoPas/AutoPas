@@ -263,7 +263,8 @@ std::string MDFlexConfig::to_string() const {
   printOption(tuningSamples);
   printOption(earlyStoppingFactor);
   printOption(useLOESSSmoothening);
-  if (tuningStrategyOptionsContainAnyOf({autopas::TuningStrategyOption::randomSearch})) {
+  if (tuningStrategyOptionsContainAnyOf(
+          {autopas::TuningStrategyOption::randomSearch, autopas::TuningStrategyOption::simulatedAnnealing})) {
     printOption(tuningMaxEvidence);
     printOption(tuningStrategySeed);
   }
@@ -281,6 +282,12 @@ std::string MDFlexConfig::to_string() const {
   }
   if (tuningStrategyOptionsContainAnyOf({autopas::TuningStrategyOption::fuzzyTuning})) {
     printOption(fuzzyRuleFilename);
+  }
+  if (tuningStrategyOptionsContainAnyOf({autopas::TuningStrategyOption::simulatedAnnealing})) {
+    printOption(initialTemperature);
+    printOption(endTemperature);
+    printOption(exclusionFactor);
+    printOption(levelChangeVariance);
   }
 
   if (getInteractionTypes().contains(autopas::InteractionTypeOption::pairwise)) {

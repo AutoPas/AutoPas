@@ -10,6 +10,7 @@
 #include "autopas/tuning/tuningStrategy/MPIParallelizedStrategy.h"
 #include "autopas/tuning/tuningStrategy/PredictiveTuning.h"
 #include "autopas/tuning/tuningStrategy/RandomSearch.h"
+#include "autopas/tuning/tuningStrategy/SimulatedAnnealing.h"
 #include "autopas/tuning/tuningStrategy/SlowConfigFilter.h"
 #include "autopas/tuning/tuningStrategy/SortByName.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyFactoryInfo.h"
@@ -30,6 +31,14 @@ std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<C
     case TuningStrategyOption::randomSearch: {
       const auto seed = info.tuningStrategySeed == 0 ? std::random_device()() : info.tuningStrategySeed;
       tuningStrategy = std::make_unique<RandomSearch>(info.maxEvidence, seed);
+      break;
+    }
+
+    case TuningStrategyOption::simulatedAnnealing: {
+      const auto seed = info.tuningStrategySeed == 0 ? std::random_device()() : info.tuningStrategySeed;
+      tuningStrategy =
+          std::make_unique<SimulatedAnnealing>(info.maxEvidence, seed, info.initialTemperature, info.endTemperature,
+                                               info.exclusionFactor, info.levelChangeVariance);
       break;
     }
 

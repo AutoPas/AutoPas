@@ -62,6 +62,11 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
      * Sort the queue by Name (=Configuration::operator<()) to minimize container conversion overhead.
      */
     sortByName,
+    /**
+     * Uses Simulated Annealing to explore the search space and tries to find a global optimum whilst evaluating only a
+     * small subset of the parameter space.
+     */
+    simulatedAnnealing,
   };
 
   /**
@@ -111,6 +116,7 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
         {TuningStrategyOption::tuningStrategyLogger, "tuning-strategy-logger"},
         {TuningStrategyOption::sortByName, "sort-by-name"},
         {TuningStrategyOption::mpiDivideAndConquer, "mpi-divide-and-conquer"},
+        {TuningStrategyOption::simulatedAnnealing, "simulated-annealing"},
     };
   }
 

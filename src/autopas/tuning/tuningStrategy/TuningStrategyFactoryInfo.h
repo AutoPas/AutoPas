@@ -47,6 +47,25 @@ struct TuningStrategyFactoryInfo {
    */
   unsigned int minNumberOfEvidence{3};
 
+  // Simulated Annealing Options
+  /**
+   * Dimensionless initial temperature for the annealing process.
+   */
+  double initialTemperature{0.2};
+  /**
+   * Dimensionless end temperature for the annealing process.
+   */
+  double endTemperature{0.01};
+  /**
+   * Factor above which a candidate configuration's predicted performance is considered to poor and it is excluded in
+   * simulated annealing.
+   */
+  double exclusionFactor{3.0};
+  /**
+   * Variance of the level normal distributions in simulated annealing.
+   */
+  double levelChangeVariance{0.75};
+
   // Slow Config Filter Options
   /**
    * Any configuration that is slower than the fastest times this factor will be blacklisted.

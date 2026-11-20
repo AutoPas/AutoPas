@@ -748,6 +748,58 @@ class AutoPas {
   }
 
   /**
+   * Get the initial temperature for simulated annealing
+   * @return
+   */
+  [[nodiscard]] double getInitialTemperature() const { return _tuningStrategyFactoryInfo.initialTemperature; }
+
+  /**
+   * Set the initial temperature for simulated annealing
+   * @param initialTemperature
+   */
+  void setInitialTemperature(double initialTemperature) {
+    _tuningStrategyFactoryInfo.initialTemperature = initialTemperature;
+  }
+
+  /**
+   * Get the end temperature for simulated annealing
+   * @return
+   */
+  [[nodiscard]] double getEndTemperature() const { return _tuningStrategyFactoryInfo.endTemperature; }
+
+  /**
+   * Set the end temperature for simulated annealing
+   * @param endTemperature
+   */
+  void setEndTemperature(double endTemperature) { _tuningStrategyFactoryInfo.endTemperature = endTemperature; }
+
+  /**
+   * Get the exclusion factor for simulated annealing
+   * @return
+   */
+  [[nodiscard]] double getExclusionFactor() const { return _tuningStrategyFactoryInfo.exclusionFactor; }
+
+  /**
+   * Set the exclusion factor for simulated annealing
+   * @param exclusionFactor
+   */
+  void setExclusionFactor(double exclusionFactor) { _tuningStrategyFactoryInfo.exclusionFactor = exclusionFactor; }
+
+  /**
+   * Get the level change variance for simulated annealing
+   * @return
+   */
+  [[nodiscard]] double getLevelChangeVariance() const { return _tuningStrategyFactoryInfo.levelChangeVariance; }
+
+  /**
+   * Set the level change variance for simulated annealing
+   * @param levelChangeVariance
+   */
+  void setLevelChangeVariance(double levelChangeVariance) {
+    _tuningStrategyFactoryInfo.levelChangeVariance = levelChangeVariance;
+  }
+
+  /**
    * Get the range for the optimum in which has to be to be tested
    * @return
    */

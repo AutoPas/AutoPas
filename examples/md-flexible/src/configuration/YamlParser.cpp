@@ -497,6 +497,38 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.tuningStrategySeed.description;
 
         config.tuningStrategySeed.value = node[key].as<unsigned long>();
+      } else if (key == config.initialTemperature.name) {
+        expected = "Floating point value > 0";
+        description = config.initialTemperature.description;
+
+        config.initialTemperature.value = node[key].as<double>();
+        if (config.initialTemperature.value <= 0.0) {
+          throw std::runtime_error("Initial temperature has to be greater than zero.");
+        }
+      } else if (key == config.endTemperature.name) {
+        expected = "Floating point value > 0";
+        description = config.endTemperature.description;
+
+        config.endTemperature.value = node[key].as<double>();
+        if (config.endTemperature.value <= 0.0) {
+          throw std::runtime_error("End temperature has to be greater than zero.");
+        }
+      } else if (key == config.exclusionFactor.name) {
+        expected = "Floating point value > 0";
+        description = config.exclusionFactor.description;
+
+        config.exclusionFactor.value = node[key].as<double>();
+        if (config.exclusionFactor.value <= 0.0) {
+          throw std::runtime_error("Exclusion factor has to be greater than zero.");
+        }
+      } else if (key == config.levelChangeVariance.name) {
+        expected = "Floating point value > 0";
+        description = config.levelChangeVariance.description;
+
+        config.levelChangeVariance.value = node[key].as<double>();
+        if (config.levelChangeVariance.value <= 0.0) {
+          throw std::runtime_error("Level change variance has to be greater than zero.");
+        }
       } else if (key == config.relativeOptimumRange.name) {
         expected = "Floating point value >= 1";
         description = config.relativeOptimumRange.description;
