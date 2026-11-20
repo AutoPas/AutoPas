@@ -475,7 +475,8 @@ class MDFlexConfig {
    */
   MDFlexOption<double, __LINE__> endTemperature{
       0.01, "end-temperature", true,
-      "For simulated annealing: Dimensionless T_end > T_0 > 0 used as the target value for the temperature in the "
+      "For simulated annealing: Dimensionless T_end with T_0 > T_end > 0 used as the target value for the temperature "
+      "in the "
       "last comparison of a tuning phase. The temperature decreases geometrically from T_0 to T_end over the whole "
       "tuning phase."};
   /**
@@ -485,7 +486,7 @@ class MDFlexConfig {
       3.0, "exclusion-factor", true,
       "For simulated annealing:  Untested candidate configurations that have been measured in a recent tuning phase "
       "(up to 2 phases back) are not tested in the current tuning phase, if the recorded measurements predict a Δ > "
-      "exclusionFactor * T_current. Can be disabled with exclusionFactor = infty."};
+      "exclusionFactor * T_current. Can be disabled with exclusionFactor = inf (.inf in YAML)."};
   /**
    * levelChangeVariance
    */

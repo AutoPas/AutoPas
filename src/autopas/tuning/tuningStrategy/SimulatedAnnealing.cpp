@@ -19,12 +19,12 @@
 /// @param maxEvidence Maximum number of evidence to collect.
 /// @param seed Seed for the random number generator.
 /// @param initialTemperature Dimensionless T_0 > 0 used as the initial value for the temperature.
-/// @param endTemperature  Dimensionless T_end > T_0 > 0 used as the target value for the temperature in the last
-/// comparison of a tuning phase. The temperature decreases geometrically from T_0 to T_end over the whole tuning
+/// @param endTemperature  Dimensionless T_end with T_0 > T_end > 0 used as the target value for the temperature in the
+/// last comparison of a tuning phase. The temperature decreases geometrically from T_0 to T_end over the whole tuning
 /// phase.
 /// @param exclusionFactor Untested candidate configurations that have been measured in a recent tuning phase (up to 2
 /// phases back) are not tested in the current tuning phase, if the recorded measurements predict a Δ > exclusionFactor
-/// * T_current. Can be disabled with exclusionFactor = infty.
+/// * T_current. Can be disabled with exclusionFactor = inf.
 autopas::SimulatedAnnealing::SimulatedAnnealing(size_t maxEvidence, unsigned long seed, double initialTemperature,
                                                 double endTemperature, double exclusionFactor,
                                                 double levelChangeVariance)

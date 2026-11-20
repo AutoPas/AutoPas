@@ -30,8 +30,8 @@ use-LOESS-smoothening                :  false
 tuning-max-evidence                  :  10
 initial-temperature                  :  0.2
 end-temperature                      :  0.01
-exclusionFactor                      :  3.0
-levelChangeVariance                  :  0.75
+exclusion-factor                     :  3.0
+level-change-variance                :  0.75
 energy-sensor                        :  rapl  # alternatively: likwid
 cutoff                               :  1
 box-min                              :  [-1.75, -1.75, -1.75]

@@ -57,8 +57,8 @@ struct TuningStrategyFactoryInfo {
    */
   double endTemperature{0.01};
   /**
-   * Factor above which a candidate configuration's predicted performance is considered to poor and it is excluded in
-   * simulated annealing.
+   * If a candidate configuration's predicted relative slowdown Δ is greater than exclusionFactor * T_current, it is
+   * skipped.
    */
   double exclusionFactor{3.0};
   /**
