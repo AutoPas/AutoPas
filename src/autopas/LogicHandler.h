@@ -105,6 +105,11 @@ class LogicHandler {
     const auto interactionLengthInv = 1. / interactionLength;
     const auto boxLengthWithHalo = logicHandlerInfo.boxMax - logicHandlerInfo.boxMin + (2 * interactionLength);
     initSpatialLocks(boxLengthWithHalo, interactionLengthInv);
+#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
+    AutoPasLog(WARN,
+               "The rebuildFrequency value {} is ignored when using dynamic rebuilding with fast particles buffer.",
+               rebuildFrequency);
+#endif
   }
 
   /**
@@ -195,10 +200,8 @@ class LogicHandler {
      */
     if (not doDataStructureUpdate) {
       /**
-       * When using reflective boundaries, fast-moving particles can leave the box unnoticed and trigger an error.
-       * This can happen during a burst of movement when a particle is near the bottom, followed by little movement,
-       * so no rebuild is triggered. The particle then moves toward the boundary and causes an error because the
-       * current implementation does not check whether particles in the buffer get too close to the border.
+       * When using reflective boundaries, fast-moving particles in the buffer can leave the box unnoticed.
+       * This is handled in MD-Flexible by throwing an error when the leaving particles cannot be reinserted.
        */
       this->addFastParticlesToParticleBuffer();
 
@@ -225,6 +228,7 @@ class LogicHandler {
       // Required to compute the particle buffer increase of the current iteration
       _rebuildDecisionContext.updateNumParticlesBufferEstimate(getNumberOfParticlesBuffer());
     }
+#endif
 
     if (_tuningManager->isStartOfTuningPhase(_iteration)) {
       _numRebuildsInNonTuningPhase = 0;
@@ -248,7 +252,6 @@ class LogicHandler {
       // buffer interactions.
       _tuningManager->setRebuildFrequency(std::min(userProvidedRF, rebuildFrequencyEstimate));
     }
-#endif
 
     if (_tuningManager->tuningPhaseJustFinished()) {
       _iterationAfterLastTuningPhase = _iteration;
@@ -750,13 +753,6 @@ class LogicHandler {
   void checkNeighborListsInvalidDoDynamicRebuild();
 
   /**
-   * Checks if the auto tuner tests a NEW configuration.
-   * updates bool: _doTuningRebuild
-   * @return _doTuningRebuild
-   */
-  bool isTuningInNeedOfRebuild();
-
-  /**
    * getter function for testing
    * @return _doDynamicRebuild
    */
@@ -988,11 +984,6 @@ class LogicHandler {
   std::atomic<bool> _usingDynamicRebuildingWithFPB{false};
 
   /**
-   * Amount of particles in the particle buffer before remainder traversal per iteration.
-   */
-  size_t _particleBufferSize{0};
-
-  /**
    * The current amount of fast particles
    */
   size_t _numParticlesFast{0};
@@ -1048,11 +1039,11 @@ class LogicHandler {
   /**
    * Indicates whether a dynamic rebuild should be performed.
    *
-   * doDynamicRebuild - true if the particle buffer is sufficiently full such that performing
-   * a rebuild is more advantageous than executing another remainder traversal,
-   * or if a rebuild time estimate is required to make this decision.
-   * It is also set to true if an error occurred during data collection or
-   * decision-making.
+   * In case of standard dynamic rebuilding, doDynamicRebuild is set to true when any particle in the container has
+   * moved more than the half skin distance. In case of dynamic rebuilding with fast particles buffer (FPB),
+   * doDynamicRebuild is set to true if the particle buffer is sufficiently full such that performing a rebuild is more
+   * advantageous than executing another remainder traversal. Does nothing for static rebuilding, should always remain
+   * false.
    */
   bool _doDynamicRebuild{false};
 
@@ -1143,17 +1134,28 @@ void LogicHandler<Particle_T>::addFastParticlesToParticleBuffer() {
   // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
   // e.g. neighbor list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
   // require a rebuild of neighbor lists.
+  // Halo particles can move more than halfskin when corresponding ownded particle in the neighboring local domain has
+  // done so. They can move into the cutoff distance of another particle but will be silently ignored as they stay as
+  // part of the container due to updateHaloParticle() call but not a part of the neighbor list that is constructed
+  // only during rebuild iterations. They are also not added to the buffer and hence not handled by remainder traversal.
+  // To avoid this, halo particle's ID is changed to max, so that it is not found when updateHaloParticle() is called
+  // and is forced into the buffer.
   AUTOPAS_OPENMP(parallel reduction(+ : _numParticlesFast))
-  for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
+  for (auto iter = this->begin(IteratorBehavior::ownedOrHalo | IteratorBehavior::containerOnly); iter.isValid();
+       ++iter) {
     const auto distance = iter->calculateDisplacementSinceRebuild();
     const double distanceSquare = utils::ArrayMath::dot(distance, distance);
     if (distanceSquare >= halfSkinSquare) {
       Particle_T &particle = *iter;
       Particle_T particleCopy = particle;
 
-      _particleBuffer[autopas_get_thread_num()].addParticle(particleCopy);
+      if (particle.isOwned()) {
+        _particleBuffer[autopas_get_thread_num()].addParticle(particleCopy);
+      } else {
+        _haloParticleBuffer[autopas_get_thread_num()].addParticle(particleCopy);
+        particle.setID(std::numeric_limits<unsigned int>::max());
+      }
       internal::markParticleAsDeleted(particle);
-
       _numParticlesFast++;
     }
   }
@@ -1169,8 +1171,12 @@ void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
   // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
   // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
   // require a rebuild of neighbor lists.
+  // Halo particles can move more than halfskin when corresponding ownded particle in the neighboring local domain has
+  // done so. They can move into the cutoff distance of another particle but will be silently ignored as they stay as
+  // part of the container due to updateHaloParticles() call and not added to the buffer.
   AUTOPAS_OPENMP(parallel reduction(or : _doDynamicRebuild))
-  for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
+  for (auto iter = this->begin(IteratorBehavior::ownedOrHalo | IteratorBehavior::containerOnly); iter.isValid();
+       ++iter) {
     const auto distance = iter->calculateDisplacementSinceRebuild();
     const double distanceSquare = utils::ArrayMath::dot(distance, distance);
     _doDynamicRebuild |= distanceSquare >= halfSkinSquare;
