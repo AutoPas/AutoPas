@@ -515,7 +515,7 @@ class KokkosParticleBase {
   }
 
   /**
-   * Setter, which allows set an attribute using the corresponding attribute name (defined in AttributeNames).
+   * Setter, that allows seting an attribute using the corresponding attribute name (defined in AttributeNames).
    * @tparam attribute Attribute name.
    * @param value New value of the requested attribute.
    */
