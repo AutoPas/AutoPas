@@ -242,3 +242,82 @@ TEST_F(CellBlock3DTest, testGetCellBoundingBox) {
   testCellBoundingBox({cellsPerDimensionWithHalo - 1, cellsPerDimensionWithHalo - 1, cellsPerDimensionWithHalo - 1},
                       boxMax, boxMax + desiredCellLength);
 }
+
+/*
+ * Tests whether forEachNearbyHaloCell() works correctly.
+ */
+TEST_F(CellBlock3DTest, testForEachNearbyHaloCell) {
+  constexpr double cellLength = 1.0;
+  constexpr std::array<double, 3> boxMin = {0.0, 0.0, 0.0};
+  constexpr std::array<double, 3> boxMax = {3.0, 3.0, 3.0};
+  std::vector<FMCell> cells;
+  autopas::internal::CellBlock3D<FMCell> cellBlock{cells, boxMin, boxMax, cellLength, 1.0};
+
+  // Case 1: Center of a halo cell {0, 2, 2} with small allowedDistance -> only visits that single halo cell.
+  {
+    std::vector<const FMCell *> visited;
+    const bool stopped = cellBlock.forEachNearbyHaloCell({-0.5, 1.5, 1.5}, 0.1, [&](FMCell &cell) {
+      visited.push_back(&cell);
+      return false;
+    });
+    EXPECT_FALSE(stopped);
+    ASSERT_EQ(visited.size(), 1);
+    EXPECT_EQ(visited[0], &cellBlock.getCell({0, 2, 2}));
+  }
+
+  // Case 2: Near a cell corner shared by halo and owned cells -> visits containing halo cell first,
+  // visits all nearby halo cells without duplicates, and never visits owned cells.
+  {
+    std::vector<const FMCell *> visited;
+    // Position (-0.05, 0.05, 0.05) is in halo cell {0, 1, 1}, within 0.1 of {0,0,0}, {0,0,1}, {0,1,0}, {1,0,0},
+    // {1,0,1}, {1,1,0} (all halo) and {1,1,1} (owned - must NOT be visited).
+    const bool stopped = cellBlock.forEachNearbyHaloCell({-0.05, 0.05, 0.05}, 0.1, [&](FMCell &cell) {
+      EXPECT_EQ(cell.getPossibleParticleOwnerships(), autopas::OwnershipState::halo);
+      visited.push_back(&cell);
+      return false;
+    });
+    EXPECT_FALSE(stopped);
+    ASSERT_EQ(visited.size(), 7);
+    // Containing cell must be visited first.
+    EXPECT_EQ(visited[0], &cellBlock.getCell({0, 1, 1}));
+    // All visited cells must be distinct.
+    std::sort(visited.begin(), visited.end());
+    EXPECT_EQ(std::unique(visited.begin(), visited.end()), visited.end());
+  }
+
+  // Case 3: Early exit on containing halo cell -> callback invoked only once.
+  {
+    size_t callCount = 0;
+    const bool stopped = cellBlock.forEachNearbyHaloCell({-0.05, 0.05, 0.05}, 0.1, [&](FMCell &cell) {
+      ++callCount;
+      EXPECT_EQ(&cell, &cellBlock.getCell({0, 1, 1}));
+      return true;
+    });
+    EXPECT_TRUE(stopped);
+    EXPECT_EQ(callCount, 1);
+  }
+
+  // Case 4: Early exit on a neighbor halo cell (not the containing cell).
+  {
+    const FMCell *target = &cellBlock.getCell({0, 0, 1});
+    size_t callCount = 0;
+    const bool stopped = cellBlock.forEachNearbyHaloCell({-0.05, 0.05, 0.05}, 0.1, [&](FMCell &cell) {
+      ++callCount;
+      return &cell == target;
+    });
+    EXPECT_TRUE(stopped);
+    EXPECT_GT(callCount, 1);
+    EXPECT_LT(callCount, 7);
+  }
+
+  // Case 5: Position deep inside owned domain -> no halo cells visited.
+  {
+    size_t callCount = 0;
+    const bool stopped = cellBlock.forEachNearbyHaloCell({1.5, 1.5, 1.5}, 0.1, [&](FMCell &) {
+      ++callCount;
+      return false;
+    });
+    EXPECT_FALSE(stopped);
+    EXPECT_EQ(callCount, 0);
+  }
+}

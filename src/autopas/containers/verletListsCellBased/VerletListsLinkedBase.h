@@ -191,12 +191,12 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle_T> {
    */
   bool updateHaloParticle(const Particle_T &haloParticle) override {
     const auto skinHalf = 0.5 * this->getVerletSkin();
-    auto cells = _linkedCells.getCellBlock().getNearbyHaloCells(haloParticle.getR(), skinHalf);
-    for (auto cellptr : cells) {
-      bool updated = internal::checkParticleInCellAndUpdateByIDAndPosition(*cellptr, haloParticle, skinHalf);
-      if (updated) {
-        return true;
-      }
+    const bool updated =
+        _linkedCells.getCellBlock().forEachNearbyHaloCell(haloParticle.getR(), skinHalf, [&](auto &cell) {
+          return internal::checkParticleInCellAndUpdateByIDAndPosition(cell, haloParticle, skinHalf);
+        });
+    if (updated) {
+      return true;
     }
     AutoPasLog(TRACE,
                "updateHaloParticle was not able to update particle at "
