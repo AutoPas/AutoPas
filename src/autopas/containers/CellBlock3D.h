@@ -11,6 +11,7 @@
 #include <array>
 #include <cmath>
 #include <numeric>
+#include <tuple>
 #include <vector>
 
 #include "autopas/containers/CellBorderAndFlagManager.h"
@@ -18,6 +19,7 @@
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
+#include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 
 namespace autopas::internal {
@@ -229,6 +231,59 @@ class CellBlock3D : public CellBorderAndFlagManager {
   }
 
   /**
+   * Finds the next particle matching matchesParticle starting at (cellIndex, particleIndex).
+   * When regionIter is true, restricts cell traversal to the 3D cell sub-box overlapping
+   * [boxMin - verletSkin, boxMax + verletSkin].
+   *
+   * @tparam regionIter Whether iteration is restricted to a bounding box.
+   * @tparam Predicate Callable with signature bool(const ParticleType &).
+   * @param cellIndex Current 1D cell index (0 with particleIndex == 0 indicates start of iteration).
+   * @param particleIndex Current particle index within the cell.
+   * @param iteratorBehavior Ownership and sequentiality flags.
+   * @param boxMin Lower corner of the search region (unused when regionIter is false).
+   * @param boxMax Upper corner of the search region (unused when regionIter is false).
+   * @param verletSkin Safety margin added around [boxMin, boxMax] when regionIter is true.
+   * @param matchesParticle Predicate deciding whether a candidate particle fulfills iterator requirements.
+   * @return Tuple of {particle pointer, cell index, particle index}, or {nullptr, 0, 0} if none remain.
+   */
+  template <bool regionIter, typename Predicate>
+  std::tuple<const typename ParticleCell::ParticleType *, size_t, size_t> getNextParticle(
+      size_t cellIndex, size_t particleIndex, IteratorBehavior iteratorBehavior, const std::array<double, 3> &boxMin,
+      const std::array<double, 3> &boxMax, double verletSkin, Predicate &&matchesParticle) const {
+    if (cellIndex >= _cells->size()) {
+      return {nullptr, 0, 0};
+    }
+
+    const bool isStart = (cellIndex == 0 and particleIndex == 0);
+
+    // Fast path: when advancing within an already-validated cell, scan its remaining particles directly without
+    // recomputing cell bounds or 3D indices.
+    if (not isStart) {
+      if (const auto result = findMatchingParticleInCell(cellIndex, particleIndex, matchesParticle);
+          std::get<0>(result) != nullptr) {
+        return result;
+      }
+    }
+
+    const bool includeOwned = static_cast<bool>(iteratorBehavior & IteratorBehavior::owned);
+    const bool includeHalo = static_cast<bool>(iteratorBehavior & IteratorBehavior::halo);
+    if (not includeOwned and not includeHalo) {
+      return {nullptr, 0, 0};
+    }
+
+    const size_t stride = (iteratorBehavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads();
+    const size_t threadOffset = (iteratorBehavior & IteratorBehavior::forceSequential) ? 0 : autopas_get_thread_num();
+
+    if constexpr (regionIter) {
+      return findNextParticleInRegion(cellIndex, isStart, includeOwned, includeHalo, boxMin, boxMax, verletSkin, stride,
+                                      threadOffset, matchesParticle);
+    } else {
+      return findNextParticleInBlock(cellIndex, isStart, includeOwned, includeHalo, stride, threadOffset,
+                                     matchesParticle);
+    }
+  }
+
+  /**
    * Get the lower corner of the halo region.
    * @return Coordinates of the lower corner.
    */
@@ -271,6 +326,123 @@ class CellBlock3D : public CellBorderAndFlagManager {
   index_t getLastOwnedCellIndex() const;
 
  private:
+  /**
+   * Scans a single cell starting at startParticleIndex for the first particle satisfying matchesParticle.
+   * @tparam Predicate Callable with signature bool(const ParticleType &).
+   * @param cellIndex 1D index of the cell to scan.
+   * @param startParticleIndex First particle index to inspect.
+   * @param matchesParticle Predicate deciding whether a particle matches.
+   * @return Tuple of {particle pointer, cellIndex, particleIndex}, or {nullptr, 0, 0} if no particle matches.
+   */
+  template <typename Predicate>
+  std::tuple<const typename ParticleCell::ParticleType *, size_t, size_t> findMatchingParticleInCell(
+      size_t cellIndex, size_t startParticleIndex, Predicate &&matchesParticle) const {
+    const auto &cell = (*_cells)[cellIndex];
+    for (size_t pIdx = startParticleIndex; pIdx < cell.size(); ++pIdx) {
+      if (matchesParticle(cell[pIdx])) {
+        return {&cell[pIdx], cellIndex, pIdx};
+      }
+    }
+    return {nullptr, 0, 0};
+  }
+
+  /**
+   * Advances a region iterator to the next matching particle by stepping directly over the 3D cell sub-box overlapping
+   * [boxMin - verletSkin, boxMax + verletSkin].
+   */
+  template <typename Predicate>
+  std::tuple<const typename ParticleCell::ParticleType *, size_t, size_t> findNextParticleInRegion(
+      size_t cellIndex, bool isStart, bool includeOwned, bool includeHalo, const std::array<double, 3> &boxMin,
+      const std::array<double, 3> &boxMax, double verletSkin, size_t stride, size_t threadOffset,
+      Predicate &&matchesParticle) const {
+    using namespace autopas::utils::ArrayMath::literals;
+
+    auto minIdx3D = get3DIndexOfPosition(boxMin - verletSkin);
+    auto maxIdx3D = get3DIndexOfPosition(boxMax + verletSkin);
+
+    // If only owned particles are requested, clamp the 3D sub-box directly to owned cells.
+    if (not includeHalo) {
+      for (size_t d = 0; d < 3; ++d) {
+        minIdx3D[d] = std::max(minIdx3D[d], _cellsPerInteractionLength);
+        maxIdx3D[d] = std::min(maxIdx3D[d], _cellsPerDimensionWithHalo[d] - _cellsPerInteractionLength - 1);
+        if (minIdx3D[d] > maxIdx3D[d]) {
+          return {nullptr, 0, 0};
+        }
+      }
+    }
+
+    const std::array<size_t, 3> subDims{
+        maxIdx3D[0] - minIdx3D[0] + 1,
+        maxIdx3D[1] - minIdx3D[1] + 1,
+        maxIdx3D[2] - minIdx3D[2] + 1,
+    };
+    const size_t totalSubCells = subDims[0] * subDims[1] * subDims[2];
+
+    size_t subIdx{};
+    if (isStart) {
+      subIdx = threadOffset;
+    } else {
+      const auto currentIdx3D = oneToThreeD(cellIndex);
+      subIdx = ((currentIdx3D[2] - minIdx3D[2]) * subDims[1] + (currentIdx3D[1] - minIdx3D[1])) * subDims[0] +
+               (currentIdx3D[0] - minIdx3D[0]) + stride;
+    }
+
+    const bool haloOnly = includeHalo and not includeOwned;
+    for (; subIdx < totalSubCells; subIdx += stride) {
+      const auto local3D = utils::ThreeDimensionalMapping::oneToThreeD(subIdx, subDims);
+      const std::array<size_t, 3> cell3D{
+          minIdx3D[0] + local3D[0],
+          minIdx3D[1] + local3D[1],
+          minIdx3D[2] + local3D[2],
+      };
+      if (haloOnly) {
+        const bool isHaloCell = cell3D[0] < _cellsPerInteractionLength or
+                                cell3D[0] >= _cellsPerDimensionWithHalo[0] - _cellsPerInteractionLength or
+                                cell3D[1] < _cellsPerInteractionLength or
+                                cell3D[1] >= _cellsPerDimensionWithHalo[1] - _cellsPerInteractionLength or
+                                cell3D[2] < _cellsPerInteractionLength or
+                                cell3D[2] >= _cellsPerDimensionWithHalo[2] - _cellsPerInteractionLength;
+        if (not isHaloCell) {
+          continue;
+        }
+      }
+      const size_t nextCellIndex = threeToOneD(cell3D);
+      if (const auto result = findMatchingParticleInCell(nextCellIndex, 0, matchesParticle);
+          std::get<0>(result) != nullptr) {
+        return result;
+      }
+    }
+    return {nullptr, 0, 0};
+  }
+
+  /**
+   * Advances a non-region iterator to the next matching particle across the cell block.
+   */
+  template <typename Predicate>
+  std::tuple<const typename ParticleCell::ParticleType *, size_t, size_t> findNextParticleInBlock(
+      size_t cellIndex, bool isStart, bool includeOwned, bool includeHalo, size_t stride, size_t threadOffset,
+      Predicate &&matchesParticle) const {
+    const size_t startCellIndex = includeHalo ? 0 : _firstOwnedCellIndex;
+    const size_t endCellIndex = includeHalo ? (_cells->size() - 1) : _lastOwnedCellIndex;
+
+    cellIndex = isStart ? (startCellIndex + threadOffset) : (cellIndex + stride);
+    const bool checkCellOwnership = not(includeOwned and includeHalo);
+    for (; cellIndex <= endCellIndex; cellIndex += stride) {
+      if (checkCellOwnership) {
+        const bool isRelevant = (includeOwned and cellCanContainOwnedParticles(cellIndex)) or
+                                (includeHalo and cellCanContainHaloParticles(cellIndex));
+        if (not isRelevant) {
+          continue;
+        }
+      }
+      if (const auto result = findMatchingParticleInCell(cellIndex, 0, matchesParticle);
+          std::get<0>(result) != nullptr) {
+        return result;
+      }
+    }
+    return {nullptr, 0, 0};
+  }
+
   /**
    * Transform a 1D index to a 3D index in the context of this cell block.
    * @param index1D
