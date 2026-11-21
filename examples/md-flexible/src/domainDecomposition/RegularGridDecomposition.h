@@ -335,31 +335,37 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param boxMax upper right rear  corner of the region that is collected.
    * @param atGlobalBoundary Indicator if we are at a global boundary and periodics are necessary.
    * @param wrapAroundDistance Distance (incl sign for direction) that the particle needs to be relocated.
-   * @param haloParticlesBuffer in-out buffer for haloParticles#
+   * @param haloParticlesBuffer Backing storage buffer for halo particles (grown as needed, never shrunk).
+   * @param haloParticlesSize Logical number of active particles in haloParticlesBuffer; incremented by collected count.
    */
   void collectHaloParticlesAux(AutoPasType &autoPasContainer, size_t direction,
                                const std::array<double, _dimensionCount> &boxMin,
                                const std::array<double, _dimensionCount> &boxMax, bool atGlobalBoundary,
-                               double wrapAroundDistance, std::vector<ParticleType> &haloParticlesBuffer);
+                               double wrapAroundDistance, std::vector<ParticleType> &haloParticlesBuffer,
+                               size_t &haloParticlesSize);
   /**
    * Collects the halo particles for the left neighbour.
    * Halo particle positions will be wrapped around the global domain boundary if necessary.
    * @param autoPasContainer: The autopas container which owns the potential halo particles.
    * @param direction: The direction along which the neighbor is located.
-   * @param particlesForLeftNeighborBuffer in-out buffer for haloParticles.
+   * @param particlesForLeftNeighborBuffer Backing storage buffer for halo particles.
+   * @param bufferSize Logical number of active particles in particlesForLeftNeighborBuffer.
    */
   void collectHaloParticlesForLeftNeighbor(AutoPasType &autoPasContainer, size_t direction,
-                                           std::vector<ParticleType> &particlesForLeftNeighborBuffer);
+                                           std::vector<ParticleType> &particlesForLeftNeighborBuffer,
+                                           size_t &bufferSize);
 
   /**
    * Collects the halo particles for the right neighbor.
    * Halo particle positions will be wrapped around the global domain boundary if necessary.
    * @param autoPasContainer: The autopas container which owns the potential halo particles.
    * @param direction: The direction along which the neighbor is located.
-   * @param particlesForRightNeighborBuffer in-out buffer for haloParticles.
+   * @param particlesForRightNeighborBuffer Backing storage buffer for halo particles.
+   * @param bufferSize Logical number of active particles in particlesForRightNeighborBuffer.
    */
   void collectHaloParticlesForRightNeighbor(AutoPasType &autoPasContainer, size_t direction,
-                                            std::vector<ParticleType> &particlesForRightNeighborBuffer);
+                                            std::vector<ParticleType> &particlesForRightNeighborBuffer,
+                                            size_t &bufferSize);
 
   /**
    * Categorizes the provided particles as particles for the left or the right neighbor and writes them into the
