@@ -266,9 +266,12 @@ class CellBlock3D : public CellBorderAndFlagManager {
       }
     }
 
-    const bool includeOwned = static_cast<bool>(iteratorBehavior & IteratorBehavior::owned);
-    const bool includeHalo = static_cast<bool>(iteratorBehavior & IteratorBehavior::halo);
-    if (not includeOwned and not includeHalo) {
+    // Dummy particles can reside in both owned and halo cells, so any request including dummy must visit all cells.
+    const bool visitOwnedCells =
+        static_cast<bool>(iteratorBehavior & (IteratorBehavior::owned | IteratorBehavior::dummy));
+    const bool visitHaloCells =
+        static_cast<bool>(iteratorBehavior & (IteratorBehavior::halo | IteratorBehavior::dummy));
+    if (not visitOwnedCells and not visitHaloCells) {
       return {nullptr, 0, 0};
     }
 
@@ -277,10 +280,10 @@ class CellBlock3D : public CellBorderAndFlagManager {
     const size_t threadOffset = (isStart and not isSequential) ? autopas_get_thread_num() : 0;
 
     if constexpr (regionIter) {
-      return findNextParticleInRegion(cellIndex, isStart, includeOwned, includeHalo, boxMin, boxMax, verletSkin, stride,
-                                      threadOffset, matchesParticle);
+      return findNextParticleInRegion(cellIndex, isStart, visitOwnedCells, visitHaloCells, boxMin, boxMax, verletSkin,
+                                      stride, threadOffset, matchesParticle);
     } else {
-      return findNextParticleInBlock(cellIndex, isStart, includeOwned, includeHalo, stride, threadOffset,
+      return findNextParticleInBlock(cellIndex, isStart, visitOwnedCells, visitHaloCells, stride, threadOffset,
                                      matchesParticle);
     }
   }
@@ -356,7 +359,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
    */
   template <typename Predicate>
   std::tuple<const typename ParticleCell_T::ParticleType *, size_t, size_t> findNextParticleInRegion(
-      const size_t cellIndex, const bool isStart, const bool includeOwned, const bool includeHalo,
+      const size_t cellIndex, const bool isStart, const bool visitOwnedCells, const bool visitHaloCells,
       const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double verletSkin,
       const size_t stride, const size_t threadOffset, Predicate &&matchesParticle) const {
     using namespace autopas::utils::ArrayMath::literals;
@@ -364,8 +367,8 @@ class CellBlock3D : public CellBorderAndFlagManager {
     auto minIdx3D = get3DIndexOfPosition(boxMin - verletSkin);
     auto maxIdx3D = get3DIndexOfPosition(boxMax + verletSkin);
 
-    // If only owned particles are requested, clamp the 3D sub-box directly to owned cells.
-    if (not includeHalo) {
+    // If neither halo nor dummy particles are requested, clamp the 3D sub-box directly to owned cells.
+    if (not visitHaloCells) {
       for (size_t d = 0; d < 3; ++d) {
         minIdx3D[d] = std::max(minIdx3D[d], _cellsPerInteractionLength);
         maxIdx3D[d] = std::min(maxIdx3D[d], _cellsPerDimensionWithHalo[d] - _cellsPerInteractionLength - 1);
@@ -381,17 +384,56 @@ class CellBlock3D : public CellBorderAndFlagManager {
         maxIdx3D[2] - minIdx3D[2] + 1,
     };
     const size_t totalSubCells = subDims[0] * subDims[1] * subDims[2];
+    const bool haloOnly = visitHaloCells and not visitOwnedCells;
+    auto isHaloCell3D = [&](const std::array<size_t, 3> &cell3D) {
+      return cell3D[0] < _cellsPerInteractionLength or
+             cell3D[0] >= _cellsPerDimensionWithHalo[0] - _cellsPerInteractionLength or
+             cell3D[1] < _cellsPerInteractionLength or
+             cell3D[1] >= _cellsPerDimensionWithHalo[1] - _cellsPerInteractionLength or
+             cell3D[2] < _cellsPerInteractionLength or
+             cell3D[2] >= _cellsPerDimensionWithHalo[2] - _cellsPerInteractionLength;
+    };
 
     size_t subIdx{};
     if (isStart) {
       subIdx = threadOffset;
     } else {
       const auto currentIdx3D = oneToThreeD(cellIndex);
-      subIdx = ((currentIdx3D[2] - minIdx3D[2]) * subDims[1] + (currentIdx3D[1] - minIdx3D[1])) * subDims[0] +
-               (currentIdx3D[0] - minIdx3D[0]) + stride;
+      const size_t dx = currentIdx3D[0] - minIdx3D[0];
+      const size_t dy = currentIdx3D[1] - minIdx3D[1];
+      const size_t dz = currentIdx3D[2] - minIdx3D[2];
+      if (dx < subDims[0] and dy < subDims[1] and dz < subDims[2]) [[likely]] {
+        subIdx = (dz * subDims[1] + dy) * subDims[0] + dx + stride;
+      } else {
+        // Off-box cursor fallback: scan in full-grid 1D order while preserving stride.
+        const size_t maxCell1D = threeToOneD(maxIdx3D);
+        if (cellIndex >= maxCell1D or stride > maxCell1D - cellIndex) {
+          return {nullptr, 0, 0};
+        }
+        const size_t minCell1D = threeToOneD(minIdx3D);
+        size_t nextCell = cellIndex + stride;
+        if (nextCell < minCell1D) {
+          const size_t gap = minCell1D - nextCell;
+          nextCell += ((gap + stride - 1) / stride) * stride;
+        }
+        for (; nextCell <= maxCell1D; nextCell += stride) {
+          const auto c3D = oneToThreeD(nextCell);
+          if (c3D[0] - minIdx3D[0] >= subDims[0] or c3D[1] - minIdx3D[1] >= subDims[1] or
+              c3D[2] - minIdx3D[2] >= subDims[2]) {
+            continue;
+          }
+          if (haloOnly and not isHaloCell3D(c3D)) {
+            continue;
+          }
+          if (const auto result = findMatchingParticleInCell(nextCell, 0, matchesParticle);
+              std::get<0>(result) != nullptr) {
+            return result;
+          }
+        }
+        return {nullptr, 0, 0};
+      }
     }
 
-    const bool haloOnly = includeHalo and not includeOwned;
     for (; subIdx < totalSubCells; subIdx += stride) {
       const auto local3D = utils::ThreeDimensionalMapping::oneToThreeD(subIdx, subDims);
       const std::array<size_t, 3> cell3D{
@@ -399,16 +441,8 @@ class CellBlock3D : public CellBorderAndFlagManager {
           minIdx3D[1] + local3D[1],
           minIdx3D[2] + local3D[2],
       };
-      if (haloOnly) {
-        const bool isHaloCell = cell3D[0] < _cellsPerInteractionLength or
-                                cell3D[0] >= _cellsPerDimensionWithHalo[0] - _cellsPerInteractionLength or
-                                cell3D[1] < _cellsPerInteractionLength or
-                                cell3D[1] >= _cellsPerDimensionWithHalo[1] - _cellsPerInteractionLength or
-                                cell3D[2] < _cellsPerInteractionLength or
-                                cell3D[2] >= _cellsPerDimensionWithHalo[2] - _cellsPerInteractionLength;
-        if (not isHaloCell) {
-          continue;
-        }
+      if (haloOnly and not isHaloCell3D(cell3D)) {
+        continue;
       }
       const size_t nextCellIndex = threeToOneD(cell3D);
       if (const auto result = findMatchingParticleInCell(nextCellIndex, 0, matchesParticle);
@@ -424,17 +458,17 @@ class CellBlock3D : public CellBorderAndFlagManager {
    */
   template <typename Predicate>
   std::tuple<const typename ParticleCell_T::ParticleType *, size_t, size_t> findNextParticleInBlock(
-      size_t cellIndex, const bool isStart, const bool includeOwned, const bool includeHalo, const size_t stride,
+      size_t cellIndex, const bool isStart, const bool visitOwnedCells, const bool visitHaloCells, const size_t stride,
       const size_t threadOffset, Predicate &&matchesParticle) const {
-    const size_t startCellIndex = includeHalo ? 0 : _firstOwnedCellIndex;
-    const size_t endCellIndex = includeHalo ? (_cells->size() - 1) : _lastOwnedCellIndex;
+    const size_t startCellIndex = visitHaloCells ? 0 : _firstOwnedCellIndex;
+    const size_t endCellIndex = visitHaloCells ? (_cells->size() - 1) : _lastOwnedCellIndex;
 
     cellIndex = isStart ? (startCellIndex + threadOffset) : (cellIndex + stride);
-    const bool checkCellOwnership = not(includeOwned and includeHalo);
+    const bool checkCellOwnership = not(visitOwnedCells and visitHaloCells);
     for (; cellIndex <= endCellIndex; cellIndex += stride) {
       if (checkCellOwnership) {
-        const bool isRelevant = (includeOwned and cellCanContainOwnedParticles(cellIndex)) or
-                                (includeHalo and cellCanContainHaloParticles(cellIndex));
+        const bool isRelevant = (visitOwnedCells and cellCanContainOwnedParticles(cellIndex)) or
+                                (visitHaloCells and cellCanContainHaloParticles(cellIndex));
         if (not isRelevant) {
           continue;
         }
