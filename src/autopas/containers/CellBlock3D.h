@@ -26,9 +26,9 @@ namespace autopas::internal {
 /**
  * Class that manages a block of ParticleCells.
  * It is used to resize the cell block and to handle the conversion of 3d to 1d indices.
- * @tparam ParticleCell Type of the handled ParticleCells.
+ * @tparam ParticleCell_T Type of the handled ParticleCells.
  */
-template <class ParticleCell>
+template <class ParticleCell_T>
 class CellBlock3D : public CellBorderAndFlagManager {
  public:
   /**
@@ -43,7 +43,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param interactionLength Max. radius of interaction between particles.
    * @param cellSizeFactor Cell size factor relative to interactionLength.
    */
-  CellBlock3D(std::vector<ParticleCell> &vec, const std::array<double, 3> &bMin, const std::array<double, 3> &bMax,
+  CellBlock3D(std::vector<ParticleCell_T> &vec, const std::array<double, 3> &bMin, const std::array<double, 3> &bMax,
               double interactionLength, double cellSizeFactor = 1.0)
       : _cells(&vec), _boxMin(bMin), _boxMax(bMax), _interactionLength(interactionLength) {
     rebuild(vec, bMin, bMax, interactionLength, cellSizeFactor);
@@ -92,14 +92,14 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param index1d The 1D index of the cell.
    * @return Non-const cell reference.
    */
-  ParticleCell &getCell(index_t index1d) const;
+  ParticleCell_T &getCell(index_t index1d) const;
 
   /**
    * Get the ParticleCell of a specified 3d index.
    * @param index3d The 3D index of the cell.
    * @return Non-const cell reference.
    */
-  ParticleCell &getCell(const std::array<index_t, 3> &index3d) const;
+  ParticleCell_T &getCell(const std::array<index_t, 3> &index3d) const;
 
   /**
    * Reserve memory for a given number of particles.
@@ -115,7 +115,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param interactionLength Max. radius of interaction between particles.
    * @param cellSizeFactor Cell size factor relative to interactionLength.
    */
-  void rebuild(std::vector<ParticleCell> &vec, const std::array<double, 3> &bMin, const std::array<double, 3> &bMax,
+  void rebuild(std::vector<ParticleCell_T> &vec, const std::array<double, 3> &bMin, const std::array<double, 3> &bMax,
                double interactionLength, double cellSizeFactor);
 
   /**
@@ -125,7 +125,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param pos The position for which the cell is needed.
    * @return Cell at the given position.
    */
-  ParticleCell &getContainingCell(const std::array<double, 3> &pos) const;
+  ParticleCell_T &getContainingCell(const std::array<double, 3> &pos) const;
 
   /**
    * Get the lower and upper corner of the cell at the 1d index index1d
@@ -247,7 +247,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @return Tuple of {particle pointer, cell index, particle index}, or {nullptr, 0, 0} if none remain.
    */
   template <bool regionIter, typename Predicate>
-  std::tuple<const typename ParticleCell::ParticleType *, size_t, size_t> getNextParticle(
+  std::tuple<const typename ParticleCell_T::ParticleType *, size_t, size_t> getNextParticle(
       size_t cellIndex, size_t particleIndex, IteratorBehavior iteratorBehavior, const std::array<double, 3> &boxMin,
       const std::array<double, 3> &boxMax, double verletSkin, Predicate &&matchesParticle) const {
     if (cellIndex >= _cells->size()) {
@@ -336,7 +336,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @return Tuple of {particle pointer, cellIndex, particleIndex}, or {nullptr, 0, 0} if no particle matches.
    */
   template <typename Predicate>
-  std::tuple<const typename ParticleCell::ParticleType *, size_t, size_t> findMatchingParticleInCell(
+  std::tuple<const typename ParticleCell_T::ParticleType *, size_t, size_t> findMatchingParticleInCell(
       size_t cellIndex, size_t startParticleIndex, Predicate &&matchesParticle) const {
     const auto &cell = (*_cells)[cellIndex];
     const size_t cellSize = cell.ParticleCell::size();
@@ -353,7 +353,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * [boxMin - verletSkin, boxMax + verletSkin].
    */
   template <typename Predicate>
-  std::tuple<const typename ParticleCell::ParticleType *, size_t, size_t> findNextParticleInRegion(
+  std::tuple<const typename ParticleCell_T::ParticleType *, size_t, size_t> findNextParticleInRegion(
       size_t cellIndex, bool isStart, bool includeOwned, bool includeHalo, const std::array<double, 3> &boxMin,
       const std::array<double, 3> &boxMax, double verletSkin, size_t stride, size_t threadOffset,
       Predicate &&matchesParticle) const {
@@ -421,7 +421,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * Advances a non-region iterator to the next matching particle across the cell block.
    */
   template <typename Predicate>
-  std::tuple<const typename ParticleCell::ParticleType *, size_t, size_t> findNextParticleInBlock(
+  std::tuple<const typename ParticleCell_T::ParticleType *, size_t, size_t> findNextParticleInBlock(
       size_t cellIndex, bool isStart, bool includeOwned, bool includeHalo, size_t stride, size_t threadOffset,
       Predicate &&matchesParticle) const {
     const size_t startCellIndex = includeHalo ? 0 : _firstOwnedCellIndex;
@@ -466,7 +466,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
   std::array<index_t, 3> _cellsPerDimensionWithHalo{};
   index_t _firstOwnedCellIndex{};
   index_t _lastOwnedCellIndex{};
-  std::vector<ParticleCell> *_cells;
+  std::vector<ParticleCell_T> *_cells;
 
   std::array<double, 3> _boxMin, _boxMax;
   std::array<double, 3> _haloBoxMin{}, _haloBoxMax{};
