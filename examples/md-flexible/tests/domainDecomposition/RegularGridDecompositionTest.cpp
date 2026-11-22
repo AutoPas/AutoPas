@@ -339,48 +339,40 @@ TEST_F(RegularGridDecompositionTest, testExchangeHaloParticlesParallelAndHighWat
     return halos;
   };
 
+  // Run reference (1 thread) and parallel (4 threads) in separate scopes so only one AutoPas instance
+  // (and its IterationLogger when AUTOPAS_LOG_ITERATIONS=ON) exists at a time.
+  auto runTwoSteps = [&](int numThreads) {
+    autopas::autopas_set_num_threads(numThreads);
+    auto [container, decomp] = makeSetup();
+    (void)container->updateContainer();
+    decomp->exchangeHaloParticles(*container);
+    auto halosStep1 = collectSortedHalos(*container);
+
+    // Step 2: Delete half of the owned particles so haloCount shrinks below _haloParticles.size() (high-water mark).
+    for (auto iter = container->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+      if (iter->getID() % 2 == 0) {
+        container->deleteParticle(iter);
+      }
+    }
+    (void)container->updateContainer();
+    decomp->exchangeHaloParticles(*container);
+    auto halosStep2 = collectSortedHalos(*container);
+    const size_t haloCountStep2 = container->getNumberOfParticles(autopas::IteratorBehavior::halo);
+    return std::make_tuple(std::move(halosStep1), std::move(halosStep2), haloCountStep2);
+  };
+
   // Reference run with 1 thread.
-  autopas::autopas_set_num_threads(1);
-  auto [refContainer, refDecomp] = makeSetup();
-  (void)refContainer->updateContainer();
-  refDecomp->exchangeHaloParticles(*refContainer);
-  const auto refHalosStep1 = collectSortedHalos(*refContainer);
+  const auto [refHalosStep1, refHalosStep2, refHaloCountStep2] = runTwoSteps(1);
   ASSERT_GT(refHalosStep1.size(), 100ul);
+  ASSERT_LT(refHalosStep2.size(), refHalosStep1.size());
+  EXPECT_EQ(refHaloCountStep2, refHalosStep2.size());
 
   // Multi-threaded run with 4 threads (triggers non-empty _threadHaloBuffers on multiple threads).
-  autopas::autopas_set_num_threads(4);
-  auto [parContainer, parDecomp] = makeSetup();
-  (void)parContainer->updateContainer();
-  parDecomp->exchangeHaloParticles(*parContainer);
-  const auto parHalosStep1 = collectSortedHalos(*parContainer);
+  const auto [parHalosStep1, parHalosStep2, parHaloCountStep2] = runTwoSteps(4);
 
   EXPECT_EQ(parHalosStep1.size(), refHalosStep1.size());
   EXPECT_EQ(parHalosStep1, refHalosStep1);
-
-  // Step 2: Delete half of the owned particles so haloCount shrinks below _haloParticles.size() (high-water mark).
-  for (auto iter = refContainer->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    if (iter->getID() % 2 == 0) {
-      refContainer->deleteParticle(iter);
-    }
-  }
-  for (auto iter = parContainer->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    if (iter->getID() % 2 == 0) {
-      parContainer->deleteParticle(iter);
-    }
-  }
-
-  autopas::autopas_set_num_threads(1);
-  (void)refContainer->updateContainer();
-  refDecomp->exchangeHaloParticles(*refContainer);
-  const auto refHalosStep2 = collectSortedHalos(*refContainer);
-  ASSERT_LT(refHalosStep2.size(), refHalosStep1.size());
-
-  autopas::autopas_set_num_threads(4);
-  (void)parContainer->updateContainer();
-  parDecomp->exchangeHaloParticles(*parContainer);
-  const auto parHalosStep2 = collectSortedHalos(*parContainer);
-
-  EXPECT_EQ(parContainer->getNumberOfParticles(autopas::IteratorBehavior::halo), refHalosStep2.size());
+  EXPECT_EQ(parHaloCountStep2, refHalosStep2.size());
   EXPECT_EQ(parHalosStep2, refHalosStep2);
 }
 
@@ -470,15 +462,17 @@ TEST_F(RegularGridDecompositionTest, testReflectParticlesAtBoundariesParallel) {
     return forces;
   };
 
-  autopas::autopas_set_num_threads(1);
-  auto [refContainer, refDecomp, refPpl] = makeSetup();
-  refDecomp->reflectParticlesAtBoundaries(*refContainer, *refPpl);
-  const auto refForces = collectForces(*refContainer);
+  // Run reference (1 thread) and parallel (4 threads) in separate scopes so only one AutoPas instance
+  // (and its IterationLogger when AUTOPAS_LOG_ITERATIONS=ON) exists at a time.
+  auto runReflect = [&](int numThreads) {
+    autopas::autopas_set_num_threads(numThreads);
+    auto [container, decomp, ppl] = makeSetup();
+    decomp->reflectParticlesAtBoundaries(*container, *ppl);
+    return collectForces(*container);
+  };
 
-  autopas::autopas_set_num_threads(4);
-  auto [parContainer, parDecomp, parPpl] = makeSetup();
-  parDecomp->reflectParticlesAtBoundaries(*parContainer, *parPpl);
-  const auto parForces = collectForces(*parContainer);
+  const auto refForces = runReflect(1);
+  const auto parForces = runReflect(4);
 
   ASSERT_EQ(parForces.size(), refForces.size());
   ASSERT_EQ(parForces.size(), 96ul);
