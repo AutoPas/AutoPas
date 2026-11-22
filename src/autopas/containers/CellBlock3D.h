@@ -271,8 +271,9 @@ class CellBlock3D : public CellBorderAndFlagManager {
       return {nullptr, 0, 0};
     }
 
-    const size_t stride = (iteratorBehavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads();
-    const size_t threadOffset = (iteratorBehavior & IteratorBehavior::forceSequential) ? 0 : autopas_get_thread_num();
+    const bool isSequential = static_cast<bool>(iteratorBehavior & IteratorBehavior::forceSequential);
+    const size_t stride = isSequential ? 1 : autopas_get_num_threads();
+    const size_t threadOffset = (isStart and not isSequential) ? autopas_get_thread_num() : 0;
 
     if constexpr (regionIter) {
       return findNextParticleInRegion(cellIndex, isStart, includeOwned, includeHalo, boxMin, boxMax, verletSkin, stride,
@@ -338,7 +339,8 @@ class CellBlock3D : public CellBorderAndFlagManager {
   std::tuple<const typename ParticleCell::ParticleType *, size_t, size_t> findMatchingParticleInCell(
       size_t cellIndex, size_t startParticleIndex, Predicate &&matchesParticle) const {
     const auto &cell = (*_cells)[cellIndex];
-    for (size_t pIdx = startParticleIndex; pIdx < cell.size(); ++pIdx) {
+    const size_t cellSize = cell.ParticleCell::size();
+    for (size_t pIdx = startParticleIndex; pIdx < cellSize; ++pIdx) {
       if (matchesParticle(cell[pIdx])) {
         return {&cell[pIdx], cellIndex, pIdx};
       }
