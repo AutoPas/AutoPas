@@ -248,8 +248,9 @@ class CellBlock3D : public CellBorderAndFlagManager {
    */
   template <bool regionIter, typename Predicate>
   std::tuple<const typename ParticleCell_T::ParticleType *, size_t, size_t> getNextParticle(
-      size_t cellIndex, size_t particleIndex, IteratorBehavior iteratorBehavior, const std::array<double, 3> &boxMin,
-      const std::array<double, 3> &boxMax, double verletSkin, Predicate &&matchesParticle) const {
+      const size_t cellIndex, const size_t particleIndex, const IteratorBehavior iteratorBehavior,
+      const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double verletSkin,
+      Predicate &&matchesParticle) const {
     if (cellIndex >= _cells->size()) {
       return {nullptr, 0, 0};
     }
@@ -337,9 +338,10 @@ class CellBlock3D : public CellBorderAndFlagManager {
    */
   template <typename Predicate>
   std::tuple<const typename ParticleCell_T::ParticleType *, size_t, size_t> findMatchingParticleInCell(
-      size_t cellIndex, size_t startParticleIndex, Predicate &&matchesParticle) const {
+      const size_t cellIndex, const size_t startParticleIndex, Predicate &&matchesParticle) const {
     const auto &cell = (*_cells)[cellIndex];
-    const size_t cellSize = cell.ParticleCell::size();
+    // cell is guaranteed to be of type ParticleCell_T, so we can use its size() method without virtual dispatch.
+    const size_t cellSize = cell.ParticleCell_T::size();
     for (size_t pIdx = startParticleIndex; pIdx < cellSize; ++pIdx) {
       if (matchesParticle(cell[pIdx])) {
         return {&cell[pIdx], cellIndex, pIdx};
@@ -354,9 +356,9 @@ class CellBlock3D : public CellBorderAndFlagManager {
    */
   template <typename Predicate>
   std::tuple<const typename ParticleCell_T::ParticleType *, size_t, size_t> findNextParticleInRegion(
-      size_t cellIndex, bool isStart, bool includeOwned, bool includeHalo, const std::array<double, 3> &boxMin,
-      const std::array<double, 3> &boxMax, double verletSkin, size_t stride, size_t threadOffset,
-      Predicate &&matchesParticle) const {
+      const size_t cellIndex, const bool isStart, const bool includeOwned, const bool includeHalo,
+      const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double verletSkin,
+      const size_t stride, const size_t threadOffset, Predicate &&matchesParticle) const {
     using namespace autopas::utils::ArrayMath::literals;
 
     auto minIdx3D = get3DIndexOfPosition(boxMin - verletSkin);
@@ -422,8 +424,8 @@ class CellBlock3D : public CellBorderAndFlagManager {
    */
   template <typename Predicate>
   std::tuple<const typename ParticleCell_T::ParticleType *, size_t, size_t> findNextParticleInBlock(
-      size_t cellIndex, bool isStart, bool includeOwned, bool includeHalo, size_t stride, size_t threadOffset,
-      Predicate &&matchesParticle) const {
+      size_t cellIndex, const bool isStart, const bool includeOwned, const bool includeHalo, const size_t stride,
+      const size_t threadOffset, Predicate &&matchesParticle) const {
     const size_t startCellIndex = includeHalo ? 0 : _firstOwnedCellIndex;
     const size_t endCellIndex = includeHalo ? (_cells->size() - 1) : _lastOwnedCellIndex;
 
