@@ -378,12 +378,12 @@ class CellBlock3D : public CellBorderAndFlagManager {
       }
     }
 
-    const std::array<size_t, 3> subDims{
+    const std::array<size_t, 3> subBoxDims{
         maxIdx3D[0] - minIdx3D[0] + 1,
         maxIdx3D[1] - minIdx3D[1] + 1,
         maxIdx3D[2] - minIdx3D[2] + 1,
     };
-    const size_t totalSubCells = subDims[0] * subDims[1] * subDims[2];
+    const size_t totalSubCells = subBoxDims[0] * subBoxDims[1] * subBoxDims[2];
     const bool haloOnly = visitHaloCells and not visitOwnedCells;
     auto isHaloCell3D = [&](const std::array<size_t, 3> &cell3D) {
       return cell3D[0] < _cellsPerInteractionLength or
@@ -402,8 +402,8 @@ class CellBlock3D : public CellBorderAndFlagManager {
       const size_t dx = currentIdx3D[0] - minIdx3D[0];
       const size_t dy = currentIdx3D[1] - minIdx3D[1];
       const size_t dz = currentIdx3D[2] - minIdx3D[2];
-      if (dx < subDims[0] and dy < subDims[1] and dz < subDims[2]) [[likely]] {
-        subIdx = (dz * subDims[1] + dy) * subDims[0] + dx + stride;
+      if (dx < subBoxDims[0] and dy < subBoxDims[1] and dz < subBoxDims[2]) [[likely]] {
+        subIdx = (dz * subBoxDims[1] + dy) * subBoxDims[0] + dx + stride;
       } else {
         // Off-box cursor fallback: scan in full-grid 1D order while preserving stride.
         const size_t maxCell1D = threeToOneD(maxIdx3D);
@@ -418,8 +418,8 @@ class CellBlock3D : public CellBorderAndFlagManager {
         }
         for (; nextCell <= maxCell1D; nextCell += stride) {
           const auto c3D = oneToThreeD(nextCell);
-          if (c3D[0] - minIdx3D[0] >= subDims[0] or c3D[1] - minIdx3D[1] >= subDims[1] or
-              c3D[2] - minIdx3D[2] >= subDims[2]) {
+          if (c3D[0] - minIdx3D[0] >= subBoxDims[0] or c3D[1] - minIdx3D[1] >= subBoxDims[1] or
+              c3D[2] - minIdx3D[2] >= subBoxDims[2]) {
             continue;
           }
           if (haloOnly and not isHaloCell3D(c3D)) {
@@ -435,7 +435,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
     }
 
     for (; subIdx < totalSubCells; subIdx += stride) {
-      const auto local3D = utils::ThreeDimensionalMapping::oneToThreeD(subIdx, subDims);
+      const auto local3D = utils::ThreeDimensionalMapping::oneToThreeD(subIdx, subBoxDims);
       const std::array<size_t, 3> cell3D{
           minIdx3D[0] + local3D[0],
           minIdx3D[1] + local3D[1],
