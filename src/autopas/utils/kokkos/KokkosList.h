@@ -17,13 +17,31 @@
 
 namespace autopas::utils::kokkos {
 
+/**
+ * Kokkos List class that wraps different data layouts into one class and delegates requests to the currently active
+ * format
+ * @tparam Particle_T The particle type to store
+ */
 template <typename Particle_T>
 class KokkosList {
  public:
   KokkosList() {}
 
+  /**
+   * Constructor for KokkosList for a specific data layout and capacity
+   * @param activeDataLayout Data Layout for the initial list
+   * @param size initial capacity of the list
+   */
   KokkosList(DataLayoutOption activeDataLayout, size_t size) : _activeDataLayout(activeDataLayout) { resize(size); }
 
+  /**
+   * Operator to access the data of the requested particle attribute at the given position.
+   * Delegates the operation to the currently active data layout
+   * @tparam Attribute Attribute name
+   * @tparam useDeviceView Flag to choose whether Kokkos should access the device-side memory
+   * @param index particle index in the list
+   * @return value of the particle attribute in the list at position index
+   */
   template <typename Particle_T::AttributeNames Attribute, bool useDeviceView = true>
   KOKKOS_INLINE_FUNCTION auto &operator()(size_t index) const {
     switch (_activeDataLayout) {
@@ -34,11 +52,14 @@ class KokkosList {
         return _soa.template operator()<Attribute, useDeviceView>(index);
       }
     }
-    // No default case so that -Wswitch reports layouts without a case. This may run on the device, so abort instead
-    // of throwing.
     Kokkos::abort("KokkosList::operator(): invalid data layout");
   }
 
+  /**
+   * Sets the capacity of the list to the given size. If size < the current size, this throws an exception.
+   * Delegates the operation to the currently active data layout.
+   * @param size new capacity of the list
+   */
   void resize(size_t size) {
     if (size < _size) {
       utils::ExceptionHandler::exception(
@@ -58,7 +79,6 @@ class KokkosList {
         return;
       }
     }
-    // No default case so that -Wswitch reports layouts without a case.
     utils::ExceptionHandler::exception("KokkosList::resize(): invalid data layout {}",
                                        static_cast<int>(_activeDataLayout));
   }
@@ -85,22 +105,45 @@ class KokkosList {
     _aos.template sync<Space>();
   }
 
+  /**
+   * Syncs all attributes to the given space.
+   * @tparam Space
+   */
   template <typename Space>
   void syncAll() {
     _aos.template sync<Space>();
     _soa.template syncAll<Space>();
   }
 
+  /**
+   * Marks all attributes as modified in the given space.
+   * @tparam Space
+   */
   template <typename Space>
   void modifyAll() {
     _aos.template modify<Space>();
     _soa.template modifyAll<Space>();
   }
 
+  /**
+   * Getter for the number of particles
+   * @return number of particles in the list
+   */
   size_t size() const { return _size; }
 
+  /**
+   * Getter for the capacity of the list
+   * @return capacity of the list
+   */
   size_t getCapacity() const { return _capacity; }
 
+  /**
+   * Adds the given particle to the list.
+   * If the capacity is exceeded, a resize to double the capacity of the list is executed first.
+   * Since particles can only be added on the host, this operation syncs the particle data to the Host and marks it as
+   * modified on the Host. Delegates the operation to the currently active data layout
+   * @param p Particle object to add to the list
+   */
   void addParticle(const Particle_T &p) {
     if (_size == _capacity) {
       size_t newCapacity = _capacity == 0 ? 2 : _capacity * 2;
@@ -119,24 +162,52 @@ class KokkosList {
         return _soa.addParticle(_size++, p);
       }
     }
-    // No default case so that -Wswitch reports layouts without a case.
     utils::ExceptionHandler::exception("KokkosList::addParticle(): invalid data layout {}",
                                        static_cast<int>(_activeDataLayout));
   }
 
+  /**
+   * Getter for the currently active data layout
+   * @return currently active data layout
+   */
   DataLayoutOption getActiveDataLayout() const { return _activeDataLayout; }
 
+  /**
+   * Getter for the KokkosAoS list
+   * @return KokkosAoS list
+   */
   const auto &getAoS() const { return _aos; }
 
+  /**
+   *
+   * @return KokkosSoA list
+   */
   const auto &getSoA() const { return _soa; }
 
  private:
+  /**
+   * Number of particles in the list
+   */
   size_t _size{0};
+
+  /**
+   * Capacity of the list
+   */
   size_t _capacity{0};
 
+  /**
+   * Currently active data layout
+   */
   DataLayoutOption _activeDataLayout{DataLayoutOption::soa};
 
+  /**
+   * AoS list
+   */
   KokkosAoS<Particle_T> _aos{};
+
+  /**
+   * SoA list
+   */
   Particle_T::KokkosSoAArraysType _soa{};
 };
 

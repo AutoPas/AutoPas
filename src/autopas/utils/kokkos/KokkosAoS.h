@@ -16,6 +16,10 @@
 
 namespace autopas::utils::kokkos {
 
+/**
+ * Kokkos version of the Array of Structure Particle Vector
+ * @tparam Particle_T The particle type to store
+ */
 template <typename Particle_T>
 class KokkosAoS {
   static_assert(std::is_trivially_copyable_v<Particle_T>,
@@ -23,6 +27,13 @@ class KokkosAoS {
                 "deep-copied between memory spaces, so e.g. virtual functions are not allowed.");
 
  public:
+  /**
+   * Operator to access the data of the requested particle attribute at the given position.
+   * @tparam Attribute Attribute name
+   * @tparam useDeviceView Flag to choose whether Kokkos should access the device-side memory
+   * @param index particle index in the list
+   * @return value of the particle attribute in the list at position index
+   */
   template <typename Particle_T::AttributeNames Attribute, bool useDeviceView = true>
   KOKKOS_INLINE_FUNCTION auto &operator()(size_t index) const {
     if constexpr (useDeviceView) {
@@ -32,23 +43,47 @@ class KokkosAoS {
     }
   }
 
+  /**
+   * Resizes the list to the given size
+   * @param size new size of the list
+   */
   void resize(size_t size) { _particles.resize(Kokkos::WithoutInitializing, size); }
 
+  /**
+   * Adds the given particle at the given index
+   * @param index position where the new particle should be added
+   * @param particle particle oject to add to the list
+   */
   void addParticle(size_t index, const Particle_T &particle) { _particles.view_host()(index) = particle; }
 
+  /**
+   * Getter for the Kokkos::DualView<Particle>
+   * @return the list of particles
+   */
   const auto &getView() const { return _particles; }
 
+  /**
+   * Marks the given execution space as modified. Operation is delegated to Kokkos::DualView
+   * @tparam Space Execution Space to mark as modified
+   */
   template <typename Space>
   void modify() {
     _particles.template modify<Space>();
   }
 
+  /**
+   * Syncs the content to the given execution space. Operation is delegated to Kokkos::DualView
+   * @tparam Space Execution Space to sync to
+   */
   template <typename Space>
   void sync() {
     _particles.template sync<Space>();
   }
 
  private:
+  /**
+   * List of AoS particle data
+   */
   Kokkos::DualView<Particle_T *, DeviceExecSpace::device_type> _particles{};
 };
 
