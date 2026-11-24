@@ -26,19 +26,19 @@ namespace kokkosTestUtils {
 /**
  * Particle type used in all Kokkos storage tests.
  */
-using Particle = autopas::KokkosParticleBaseFP32;
+using TestParticle = autopas::KokkosParticleBaseFP32;
 /**
  * Attribute names of the particle type.
  */
-using Attr = Particle::AttributeNames;
+using Attr = TestParticle::AttributeNames;
 /**
  * SoA storage of the particle type.
  */
-using SoA = Particle::KokkosSoAArraysType;
+using SoA = TestParticle::KokkosSoAArraysType;
 /**
  * AoS storage of the particle type.
  */
-using AoS = autopas::utils::kokkos::KokkosAoS<Particle>;
+using AoS = autopas::utils::kokkos::KokkosAoS<TestParticle>;
 using autopas::utils::kokkos::DeviceExecSpace;
 using autopas::utils::kokkos::HostExecSpace;
 
@@ -96,9 +96,9 @@ KOKKOS_INLINE_FUNCTION ExpectedParticle expectedAt(size_t i, float offset = 0.f)
  * @param i Index of the particle.
  * @return The particle.
  */
-inline Particle makeParticle(size_t i) {
+inline TestParticle makeParticle(size_t i) {
   const auto expected = expectedAt(i);
-  Particle particle{};
+  TestParticle particle{};
   particle.setID(expected.id);
   particle.setR({expected.x, expected.y, expected.z});
   particle.setV({expected.vx, expected.vy, expected.vz});

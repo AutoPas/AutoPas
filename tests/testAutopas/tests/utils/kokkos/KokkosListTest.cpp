@@ -17,7 +17,7 @@ using namespace kokkosTestUtils;
 
 namespace {
 
-using List = autopas::utils::kokkos::KokkosList<Particle>;
+using List = autopas::utils::kokkos::KokkosList<TestParticle>;
 
 /**
  * Adds the particles with the indices [first, last) to the list.
