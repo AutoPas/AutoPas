@@ -4,11 +4,11 @@
  * @date 28.12.25
  */
 
-#include "RegressionModelsTest.h"
+#include "DynamicRebuildDecisionWithFPBTest.h"
 
-using namespace autopas::utils::RegressionModels;
+using namespace autopas::utils::DynamicRebuildDecisionWithFPB;
 
-TEST(RegressionModelsTest, testRebuildEstimateManager) {
+TEST(DynamicRebuildDecisionWithFPBTest, testRebuildEstimateManager) {
   RebuildEstimateManager rebuildPredictor{};
 
   rebuildPredictor.addNewPoint(10);
@@ -32,7 +32,7 @@ TEST(RegressionModelsTest, testRebuildEstimateManager) {
   EXPECT_EQ(rebuildPredictor.predict(), 40);
 }
 
-TEST(RegressionModelsTest, testRemainderTraversalEstimateManager) {
+TEST(DynamicRebuildDecisionWithFPBTest, testRemainderTraversalEstimateManager) {
   RemainderTraversalEstimateManager remTravPredictor{};
   EXPECT_EQ(remTravPredictor.predict(10), 0);
 
@@ -84,7 +84,7 @@ TEST(RegressionModelsTest, testRemainderTraversalEstimateManager) {
   EXPECT_EQ(remTravPredictor.getSumRemainderTraversalTime(), 0);
 }
 
-TEST(RegressionModelsTest, testRebuildDecisionContext) {
+TEST(DynamicRebuildDecisionWithFPBTest, testRebuildDecisionContext) {
   RebuildDecisionContext rebuildDecisionContext{};
 
   // Steps since rebuild: 1

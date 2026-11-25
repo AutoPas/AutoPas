@@ -27,8 +27,8 @@
 #include "autopas/tuning/selectors/ContainerSelectorInfo.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/utils/ArrayUtils.h"
+#include "autopas/utils/DynamicRebuildDecisionWithFPB/RebuildDecisionContext.h"
 #include "autopas/utils/NumParticlesEstimator.h"
-#include "autopas/utils/RegressionModels.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/TraceTimer.h"
@@ -998,9 +998,10 @@ class LogicHandler {
 
   /**
    * Aggregates all data required to decide whether a neighbor list rebuild
-   * should be triggered based on estimated remainder traversal and rebuild times.
+   * should be triggered based on estimated remainder traversal and rebuild times when using dynamic rebuild with fast
+   * particles buffer (FPB).
    */
-  utils::RegressionModels::RebuildDecisionContext _rebuildDecisionContext{};
+  utils::DynamicRebuildDecisionWithFPB::RebuildDecisionContext _rebuildDecisionContext{};
 
   /**
    * The iteration number after the last tuning phase has ended.
