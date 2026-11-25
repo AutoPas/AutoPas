@@ -630,12 +630,15 @@ class LogicHandler {
   [[nodiscard]] unsigned long getNumberOfParticlesHalo() const { return _numParticlesHalo; }
 
   /**
-   * Get the number of particles in the buffer.
+   * Get the total number of particles (owned+halo) in the buffer.
    * @return
    */
   [[nodiscard]] unsigned long getNumberOfParticlesBuffer() const {
     size_t particleBufferSize = 0;
     for (auto &cell : _particleBuffer) {
+      particleBufferSize += cell.size();
+    }
+    for (auto &cell : _haloParticleBuffer) {
       particleBufferSize += cell.size();
     }
     return particleBufferSize;
@@ -1068,7 +1071,7 @@ void LogicHandler<Particle_T>::updateRebuildPositions() {
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   // All the owned particles need to be reset as even buffer particles will be added to the container during rebuilding.
   AUTOPAS_OPENMP(parallel)
-  for (auto iter = this->begin(IteratorBehavior::owned); iter.isValid(); ++iter) {
+  for (auto iter = this->begin(IteratorBehavior::ownedOrHalo); iter.isValid(); ++iter) {
     iter->resetRAtRebuild();
   }
 #endif
@@ -1129,32 +1132,38 @@ template <typename Particle_T>
 void LogicHandler<Particle_T>::addFastParticlesToParticleBuffer() {
 #ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
   const auto skin = getContainer().getVerletSkin();
-  // (skin/2)^2
   const auto halfSkinSquare = skin * skin * 0.25;
-  // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
+  auto stepsSinceLastRebuildPrevIter = std::max(_stepsSinceLastListRebuild - 1, static_cast<size_t>(1));
+  const auto haloFactor = 1.05 * _stepsSinceLastListRebuild * _stepsSinceLastListRebuild /
+                          stepsSinceLastRebuildPrevIter / stepsSinceLastRebuildPrevIter;
+
+  // The particles in buffer are ignored because they do not rely on the structure of the particle containers,
   // e.g. neighbor list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
   // require a rebuild of neighbor lists.
-  // Halo particles can move more than halfskin when corresponding ownded particle in the neighboring local domain has
-  // done so. They can move into the cutoff distance of another particle but will be silently ignored as they stay as
-  // part of the container due to updateHaloParticle() call but not a part of the neighbor list that is constructed
-  // only during rebuild iterations. They are also not added to the buffer and hence not handled by remainder traversal.
-  // To avoid this, halo particle's ID is changed to max, so that it is not found when updateHaloParticle() is called
-  // and is forced into the buffer.
   AUTOPAS_OPENMP(parallel reduction(+ : _numParticlesFast))
   for (auto iter = this->begin(IteratorBehavior::ownedOrHalo | IteratorBehavior::containerOnly); iter.isValid();
        ++iter) {
     const auto distance = iter->calculateDisplacementSinceRebuild();
     const double distanceSquare = utils::ArrayMath::dot(distance, distance);
-    if (distanceSquare >= halfSkinSquare) {
-      Particle_T &particle = *iter;
-      Particle_T particleCopy = particle;
-
-      if (particle.isOwned()) {
-        _particleBuffer[autopas_get_thread_num()].addParticle(particleCopy);
-      } else {
-        _haloParticleBuffer[autopas_get_thread_num()].addParticle(particleCopy);
-        particle.setID(std::numeric_limits<unsigned int>::max());
-      }
+    Particle_T &particle = *iter;
+    Particle_T particleCopy = particle;
+    // Position of owned particles is already updated at the time of updateContainer() call. Hence, all the particles
+    // that have moved farther than halfSkin distance are moved the fast particle buffer (instead of triggering rebuild
+    // as in the standard dynamic rebuilding.)
+    if (particle.isOwned() and distanceSquare >= halfSkinSquare) {
+      _particleBuffer[autopas_get_thread_num()].addParticle(particleCopy);
+      internal::markParticleAsDeleted(particle);
+      _numParticlesFast++;
+    }
+    // Halo particles can move more than halfskin when corresponding ownded particle in the neighboring local domain
+    // has done so. They can move into the cutoff distance of another particle but will be silently ignored as they
+    // are not a part of the neighbor list that is constructed only during rebuild iterations. They are also not added
+    // to the buffer and hence not handled by remainder traversal. To avoid this, halo particle's ID is changed to max
+    // and deleted, so that it is not found when updateHaloParticle() is called and is forced into the buffer. Halo
+    // particles are not added to buffer here as they will be removed later in the updateContainer() and added again
+    // when exchanging halos from neighbouring rank before computeInteraction() call.
+    if (particle.isHalo() and (haloFactor * distanceSquare >= halfSkinSquare)) {
+      particle.setID(std::numeric_limits<unsigned int>::max());
       internal::markParticleAsDeleted(particle);
       _numParticlesFast++;
     }
@@ -1168,18 +1177,32 @@ void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
   const auto skin = getContainer().getVerletSkin();
   // (skin/2)^2
   const auto halfSkinSquare = skin * skin * 0.25;
-  // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
-  // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
-  // require a rebuild of neighbor lists.
-  // Halo particles can move more than halfskin when corresponding ownded particle in the neighboring local domain has
-  // done so. They can move into the cutoff distance of another particle but will be silently ignored as they stay as
-  // part of the container due to updateHaloParticles() call and not added to the buffer.
+  auto stepsSinceLastRebuildPrevIter = std::max(_stepsSinceLastListRebuild - 1, static_cast<size_t>(1));
+  const auto haloFactor = 1.05 * _stepsSinceLastListRebuild * _stepsSinceLastListRebuild /
+                          stepsSinceLastRebuildPrevIter / stepsSinceLastRebuildPrevIter;
+  // The particles in buffer are ignored because they do not rely on the structure of the particle containers,
+  // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer
+  // doesn't require a rebuild of neighbor lists.
   AUTOPAS_OPENMP(parallel reduction(or : _doDynamicRebuild))
   for (auto iter = this->begin(IteratorBehavior::ownedOrHalo | IteratorBehavior::containerOnly); iter.isValid();
        ++iter) {
     const auto distance = iter->calculateDisplacementSinceRebuild();
     const double distanceSquare = utils::ArrayMath::dot(distance, distance);
-    _doDynamicRebuild |= distanceSquare >= halfSkinSquare;
+    Particle_T &particle = *iter;
+    if (particle.isOwned() and distanceSquare >= halfSkinSquare) {
+      _doDynamicRebuild |= true;
+    }
+    // Halo particles can move more than halfskin when corresponding ownded particle in the neighboring local domain
+    // has done so. They can move into the cutoff distance of another particle but will be silently ignored as they
+    // are not a part of the neighbor list that is constructed only during rebuild iterations. They are also not added
+    // to the buffer and hence not handled by remainder traversal. To avoid this, halo particle's ID is changed to max
+    // and deleted, so that it is not found when updateHaloParticle() is called and is forced into the buffer. Halo
+    // particles are not added to buffer here as they will be removed later in the updateContainer() and added again
+    // when exchanging halos from neighbouring rank before computeInteraction() call.
+    if (particle.isHalo() and (haloFactor * distanceSquare >= halfSkinSquare)) {
+      particle.setID(std::numeric_limits<unsigned int>::max());
+      internal::markParticleAsDeleted(particle);
+    }
   }
 #endif
 }
@@ -1468,7 +1491,8 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
                                                            const InteractionTypeOption &interactionType) {
   if (not _interactionTypes.contains(interactionType)) {
     utils::ExceptionHandler::exception(
-        "LogicHandler::computeInteractionsPipeline(): AutPas was not initialized for the Functor's interactions type: "
+        "LogicHandler::computeInteractionsPipeline(): AutPas was not initialized for the Functor's interactions "
+        "type: "
         "{}.",
         interactionType);
   }
@@ -1580,11 +1604,11 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
     const Configuration &config, Functor &functor) {
   // Check if the configuration is compatible, independent of domain or functor
   if (not config.hasCompatibleValues()) {
-    AutoPasLog(
-        WARN,
-        "A configuration was rejected by LogicHandler::isConfigurationApplicable, as it was incompatible"
-        " independently of domain or functor. This should not occur and implies illegal configurations are being added"
-        " to the configuration queue during simulation (potentially by a tuning strategy).");
+    AutoPasLog(WARN,
+               "A configuration was rejected by LogicHandler::isConfigurationApplicable, as it was incompatible"
+               " independently of domain or functor. This should not occur and implies illegal configurations are "
+               "being added"
+               " to the configuration queue during simulation (potentially by a tuning strategy).");
     AutoPasLog(WARN, "Configuration rejected: {}", config.toString());
     // Such illegal configurations should be filtered out in the generation of the search space.
     return {nullptr, /*rejectIndefinitely*/ true};
@@ -1597,8 +1621,8 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
     return {nullptr, /*rejectIndefinitely*/ true};
   }
 
-  // Check if the VectorizationPattern is supported by the functor. Only SoA configurations use a vectorization pattern;
-  // AoS configurations always use the not-applicable (N/A) pattern, which every functor supports.
+  // Check if the VectorizationPattern is supported by the functor. Only SoA configurations use a vectorization
+  // pattern; AoS configurations always use the not-applicable (N/A) pattern, which every functor supports.
   if (config.dataLayout == DataLayoutOption::soa and not functor.isVecPatternAllowed(config.vecPattern)) {
     AutoPasLog(DEBUG, "Configuration rejected: The functor doesn't support the SoA Vectorization Pattern {}!",
                config.vecPattern);
