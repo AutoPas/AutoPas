@@ -716,7 +716,8 @@ class LogicHandler {
   }
 
   /**
-   * Estimates the rebuild frequency based on the current maximum velocity in the container
+   * Estimates the rebuild frequency based on the current maximum velocity in the container.
+   * This doesn't include the buffer particles as they do not trigger rebuild of the neighbor lists.
    * Using the formula rf = skin/deltaT/vmax/2
    * @param skin is the skin length used in the simulation
    * @param deltaT is the time step
