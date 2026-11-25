@@ -68,7 +68,12 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
       : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin, aosSortingThresholdFallback,
                                                      soaSortingThresholdFallback),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor),
-        _loadEstimator(loadEstimator) {}
+        _loadEstimator(loadEstimator) {
+    // The cells refer to the particles by their index in _particleList.
+    for (auto &cell : this->_cells) {
+      cell.setParticleStorage(&_particleList.getParticleStorage());
+    }
+  }
 
   /**
    * @copydoc ParticleContainerInterface::getContainerType()
@@ -103,9 +108,10 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * @copydoc ParticleContainerInterface::updateHaloParticle()
    */
   bool updateHaloParticle(const Particle_T &haloParticle) override {
-    auto cells = _cellBlock.getNearbyHaloCells(haloParticle.getR(), this->getVerletSkin());
+    const auto skinHalf = 0.5 * this->getVerletSkin();
+    auto cells = _cellBlock.getNearbyHaloCells(haloParticle.getR(), skinHalf);
     for (auto cellptr : cells) {
-      bool updated = internal::checkParticleInCellAndUpdateByID(*cellptr, haloParticle);
+      bool updated = internal::checkParticleInCellAndUpdateByIDAndPosition(*cellptr, haloParticle, skinHalf);
       if (updated) {
         return true;
       }
@@ -157,7 +163,8 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
 
   /**
    * Updates all the References in the cells that are out of date.
-   * @note Removes all dummy particles.
+   * @note Dummy particles are not referenced. If all references are rebuilt, this removes all dummy particles from the
+   * cells.
    */
   void updateDirtyParticleReferences() {
     if (_particleList.isDirty()) {
@@ -167,13 +174,13 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
         }
       }
 
-      for (auto it = _particleList.beginDirty(); it < _particleList.endDirty(); it++) {
-        if (it->isDummy()) {
+      auto &particles = _particleList.getParticleStorage();
+      for (size_t index = _particleList.getDirtyIndex(); index < particles.size(); ++index) {
+        if (particles[index].isDummy()) {
           continue;
         }
-        ParticleCellType &cell = _cellBlock.getContainingCell(it->getR());
-        auto address = &(*it);
-        cell.addParticleReference(address);
+        ParticleCellType &cell = _cellBlock.getContainingCell(particles[index].getR());
+        cell.addParticleReference(index);
       }
       _particleList.markAsClean();
     }
@@ -292,19 +299,17 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
   /**
    * @copydoc ParticleContainerInterface::deleteParticle(Particle_T &particle)
    */
-  bool deleteParticle(Particle_T &particle) override {
+  void deleteParticle(Particle_T &particle) override {
     // This function doesn't actually delete anything as it would mess up the reference structure.
     internal::markParticleAsDeleted(particle);
-    return false;
   }
 
   /**
    * @copydoc ParticleContainerInterface::deleteParticle(size_t cellIndex, size_t particleIndex)
    */
-  bool deleteParticle(size_t cellIndex, size_t particleIndex) override {
+  void deleteParticle(size_t cellIndex, size_t particleIndex) override {
     // This function doesn't actually delete anything as it would mess up the reference structure.
     internal::markParticleAsDeleted(this->_cells[cellIndex][particleIndex]);
-    return false;
   }
 
   std::vector<Particle_T> updateContainer(bool keepNeighborListsValid) override {
@@ -313,6 +318,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     }
 
     std::vector<Particle_T> invalidParticles;
+    auto &particles = _particleList.getParticleStorage();
 
     // for exception handling in parallel region
     bool exceptionCaught{false};
@@ -333,15 +339,16 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
 
         auto &particleVec = this->getCells()[cellId]._particles;
         for (auto pIter = particleVec.begin(); pIter != particleVec.end();) {
-          if ((*pIter)->isOwned() and utils::notInBox((*pIter)->getR(), cellLowerCorner, cellUpperCorner)) {
-            myInvalidParticles.push_back(**pIter);
+          if (particles[*pIter].isOwned() and
+              utils::notInBox(particles[*pIter].getR(), cellLowerCorner, cellUpperCorner)) {
+            myInvalidParticles.push_back(particles[*pIter]);
 
             // multi layer swap-delete
-            // we copy the particle behind the last pointer in the cell over the particle we want to delete
-            **pIter = *particleVec.back();
+            // we copy the particle behind the last index in the cell over the particle we want to delete
+            particles[*pIter] = particles[particleVec.back()];
             // since we will not actually delete the particle we just copied mark it as dummy.
-            particleVec.back()->setOwnershipState(OwnershipState::dummy);
-            // then we pop the last pointer from the cell.
+            particles[particleVec.back()].setOwnershipState(OwnershipState::dummy);
+            // then we pop the last index from the cell.
             particleVec.pop_back();
 
           } else {

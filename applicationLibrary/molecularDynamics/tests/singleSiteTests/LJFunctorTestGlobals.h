@@ -10,6 +10,7 @@
 
 #include "LJFunctorTest.h"
 #include "LJPotential.h"
+#include "autopas/options/VectorizationPatternOption.h"
 #include "autopas/utils/generators/UniformGenerator.h"
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 
@@ -21,8 +22,14 @@ class LJFunctorTestGlobals : public LJFunctorTest {
   static void testAoSGlobals(where_type where, bool newton3);
   static void testSoAGlobals(where_type where, bool newton3, InteractionType interactionType,
                              size_t additionalParticlesToVerletNumber, uint64_t numParticleReplicas,
-                             bool mixedNewton3FunctorCalls);
+                             bool mixedNewton3FunctorCalls, autopas::VectorizationPatternOption::Value vecPattern);
   static void testAoSGlobalsMixedN3(LJFunctorTestGlobals<FuncType>::where_type where);
+
+  /**
+   * Collects all vectorization patterns that FuncType supports in its SoA functors.
+   * @return The supported patterns.
+   */
+  static std::vector<autopas::VectorizationPatternOption::Value> getSupportedVecPatterns();
 
   constexpr static double cutoff{1.};
   constexpr static double epsilon{1.};

@@ -126,7 +126,10 @@ class Cluster {
    *
    * @param firstParticle
    */
-  void reset(Particle_T *firstParticle) { _firstParticle = firstParticle; }
+  void reset(Particle_T *firstParticle) {
+    _firstParticle = firstParticle;
+    _neighborClusters = nullptr;
+  }
 
   /**
    * Get the bounding box of this cluster

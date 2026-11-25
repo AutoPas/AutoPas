@@ -9,6 +9,7 @@
 #include <limits>
 #include <memory>
 #include <set>
+#include <tuple>
 #include <unordered_map>
 
 #include "autopas/options/ContainerOption.h"
@@ -67,15 +68,17 @@ class TuningManager {
   /**
    * Reject the current configuration for the interactionType by either skipping over it (indefinitely = false) or
    * removing it entirely (indefinitely = true). Also refreshes the respective AutoTuner's queue and returns the next
-   * configuration in line.
+   * configuration in line. If this was the last configuration of the tuning phase, the tuning phase is ended the same
+   * way as in tune() and the selected configuration is returned.
    * @param rejectedConfig The configuration to skip/remove
    * @param indefinitely True, if the configuration should also be removed from the search space and with that upcoming
    * tuning phases.
    * @param interactionType Pairwise, triwise, ...
-   * @return The next configuration from the queue.
+   * @return Tuple<The next configuration to use, true if at least one AutoTuner is still in tuning state>.
    */
-  Configuration rejectConfiguration(const Configuration &rejectedConfig, bool indefinitely,
-                                    InteractionTypeOption::Value interactionType);
+  [[nodiscard]] std::tuple<Configuration, bool> rejectConfiguration(const Configuration &rejectedConfig,
+                                                                    bool indefinitely,
+                                                                    InteractionTypeOption::Value interactionType);
 
   /**
    * Force all AutoTuners to start a new tuning phase immediately.
@@ -159,6 +162,14 @@ class TuningManager {
   void tuneConfigurations(size_t currentIteration);
 
   /**
+   * If all AutoTuners finished tuning, end the tuning phase: Select the overall optimal configurations and mark the
+   * tuning phase as just finished.
+   * To be called whenever the AutoTuners might have finished tuning, i.e. after they selected the configuration for the
+   * next iteration in tuneConfigurations() and after a configuration was rejected in rejectConfiguration().
+   */
+  void handleEndOfTuningPhase();
+
+  /**
    * To be called at the end of a tuning phase.
    * Compares evidence of all active AutoTuners and sets the best configurations leading to an overall optimal time step
    * performance.
@@ -210,6 +221,7 @@ class TuningManager {
 
   /**
    * Boolean flag that is only true between the last tuning iteration and the next non-tuning iteration.
+   * Set in handleEndOfTuningPhase() and reset at the start of tuneConfigurations().
    */
   bool _tuningFinishedLastIteration = false;
 

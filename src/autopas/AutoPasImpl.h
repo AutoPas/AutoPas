@@ -284,14 +284,13 @@ void AutoPas<Particle_T>::deleteParticle(RegionIteratorT &iter) {
 }
 
 template <class Particle_T>
-bool AutoPas<Particle_T>::deleteParticle(Particle_T &particle) {
+DeleteParticleResult AutoPas<Particle_T>::deleteParticle(Particle_T &particle) {
   _logicHandler->decreaseParticleCounter(particle);
   // if the particle was not found in the logic handler's buffers it must be in the container
-  auto [particleDeleted, refStillValid] = _logicHandler->deleteParticleFromBuffers(particle);
-  if (not particleDeleted) {
-    refStillValid = _logicHandler->getContainer().deleteParticle(particle);
+  if (not _logicHandler->deleteParticleFromBuffers(particle)) {
+    _logicHandler->getContainer().deleteParticle(particle);
   }
-  return refStillValid;
+  return {};
 }
 
 template <class Particle_T>

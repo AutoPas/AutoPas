@@ -53,16 +53,13 @@ void TuningManager::setRebuildFrequency(const double rebuildFrequency) {
   }
 }
 
-Configuration TuningManager::rejectConfiguration(const Configuration &rejectedConfig, const bool indefinitely,
-                                                 const InteractionTypeOption::Value interactionType) {
-  auto &tunerToReject = _autoTuners[interactionType];
-  auto newConfig = tunerToReject->rejectConfig(rejectedConfig, indefinitely, _tuningPhase);
-  bool allTunersFinished = true;
-  for (const auto &tuner : _autoTuners | std::views::values) {
-    allTunersFinished = allTunersFinished and (not tuner->inTuningPhase());
-  }
-  _tuningFinished = allTunersFinished;
-  return newConfig;
+std::tuple<Configuration, bool> TuningManager::rejectConfiguration(const Configuration &rejectedConfig,
+                                                                   const bool indefinitely,
+                                                                   const InteractionTypeOption::Value interactionType) {
+  _autoTuners.at(interactionType)->rejectConfig(rejectedConfig, indefinitely, _tuningPhase);
+  // Handle the end of the tuning phase, if we just ended it with that rejection
+  handleEndOfTuningPhase();
+  return {getCurrentConfig(interactionType), not _tuningFinished};
 }
 
 void TuningManager::forceRetune() {
@@ -126,15 +123,19 @@ const TuningMetricOption &TuningManager::getTuningMetric(const InteractionTypeOp
 }
 
 void TuningManager::tuneConfigurations(const size_t currentIteration) {
-  // Check if any tuner is still tuning
-  bool allTunersFinished = true;
+  _tuningFinishedLastIteration = false;
   const bool isStart = isStartOfTuningPhase(currentIteration);
 
   for (const auto &tuner : _autoTuners | std::views::values) {
-    const bool stillTuning = tuner->tuneConfiguration(currentIteration, _tuningPhase, isStart);
-    allTunersFinished = allTunersFinished and (not stillTuning);
+    tuner->tuneConfiguration(currentIteration, _tuningPhase, isStart);
   }
-  _tuningFinishedLastIteration = false;
+  handleEndOfTuningPhase();
+}
+
+void TuningManager::handleEndOfTuningPhase() {
+  // Check if any tuner is still tuning
+  const bool allTunersFinished =
+      std::ranges::none_of(_autoTuners | std::views::values, [](const auto &tuner) { return tuner->inTuningPhase(); });
   if (allTunersFinished and (not _tuningFinished)) {
     // Save the best container results before changing container
     setOptimalConfigurations();

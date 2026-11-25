@@ -160,16 +160,14 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle_T> {
                                                              boxMax);
   }
 
-  bool deleteParticle(Particle_T &particle) override {
+  void deleteParticle(Particle_T &particle) override {
     // This function doesn't actually delete anything as it would mess up the references in the lists.
     internal::markParticleAsDeleted(particle);
-    return false;
   }
 
-  bool deleteParticle(size_t cellIndex, size_t particleIndex) override {
+  void deleteParticle(size_t cellIndex, size_t particleIndex) override {
     // This function doesn't actually delete anything as it would mess up the references in the lists.
     internal::markParticleAsDeleted(this->_linkedCells.getCells()[cellIndex][particleIndex]);
-    return false;
   }
 
   /**
@@ -192,9 +190,10 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle_T> {
    * @return true if a particle was found and updated, false if it was not found.
    */
   bool updateHaloParticle(const Particle_T &haloParticle) override {
-    auto cells = _linkedCells.getCellBlock().getNearbyHaloCells(haloParticle.getR(), this->getVerletSkin());
+    const auto skinHalf = 0.5 * this->getVerletSkin();
+    auto cells = _linkedCells.getCellBlock().getNearbyHaloCells(haloParticle.getR(), skinHalf);
     for (auto cellptr : cells) {
-      bool updated = internal::checkParticleInCellAndUpdateByID(*cellptr, haloParticle);
+      bool updated = internal::checkParticleInCellAndUpdateByIDAndPosition(*cellptr, haloParticle, skinHalf);
       if (updated) {
         return true;
       }

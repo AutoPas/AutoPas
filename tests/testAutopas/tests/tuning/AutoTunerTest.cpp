@@ -252,8 +252,8 @@ void AutoTunerTest::testEndingTuningPhaseWithRejectedConfig(bool rejectIndefinit
   // 2) Second config is rejected, should immediately get the next one.
   autoTuner.tuneConfiguration(iteration, 0, false);
   const auto config2 = autoTuner.getCurrentConfig();
-  const auto configAfterReject2 = autoTuner.rejectConfig(config2, /*indefinitely*/ rejectIndefinitely, tuningPhase);
-  // EXPECT_TRUE(stillTuningAfterReject2);
+  autoTuner.rejectConfig(config2, /*indefinitely*/ rejectIndefinitely, tuningPhase);
+  EXPECT_TRUE(autoTuner.inTuningPhase());
 
   // 3) Sample third config (accepted). Make it faster than config1 so it becomes the optimum.
   autoTuner.addMeasurement(90, 10, /*neighborListRebuilt*/ true, iteration, tuningPhase);
@@ -261,11 +261,13 @@ void AutoTunerTest::testEndingTuningPhaseWithRejectedConfig(bool rejectIndefinit
 
   // 4) Final config is rejected.
   autoTuner.tuneConfiguration(iteration, 0, false);
+  ASSERT_EQ(autoTuner.getConfigQueue().size(), 1) << "The rejected config has to be the last one of the tuning phase.";
   const auto config4 = autoTuner.getCurrentConfig();
-  const auto configAfterReject4 = autoTuner.rejectConfig(config4, /*indefinitely*/ rejectIndefinitely, tuningPhase);
+  autoTuner.rejectConfig(config4, /*indefinitely*/ rejectIndefinitely, tuningPhase);
+  EXPECT_FALSE(autoTuner.inTuningPhase());
 
   const auto expectedBest = arbitraryConfigurations::_arbitrary_config_2B_2;
-  EXPECT_EQ(configAfterReject4, expectedBest);
+  EXPECT_EQ(autoTuner.getCurrentConfig(), expectedBest);
 
   iteration++;
   autoTuner.tuneConfiguration(iteration, 0, false);
@@ -277,7 +279,7 @@ void AutoTunerTest::testEndingTuningPhaseWithRejectedConfig(bool rejectIndefinit
  * Tests that ending a tuning phase with a reject configuration is handled correctly.
  *
  * Mimics an AutoTuner trialling four configurations. The second and the final configurations will be rejected. After
- * the tuning phase is completed, the test should get the correct configuration upon calling `getNextConfig`
+ * the tuning phase is completed, the test should get the correct configuration upon calling `getCurrentConfig`
  */
 TEST_F(AutoTunerTest, testEndingTuningPhaseWithRejectedConfig) {
   testEndingTuningPhaseWithRejectedConfig(true);

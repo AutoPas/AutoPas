@@ -43,11 +43,6 @@ template <class Particle_T>
 class ClusterTower : public FullParticleCell<Particle_T> {
  public:
   /**
-   * Type that holds or refers to the actual particles.
-   */
-  using StorageType = typename FullParticleCell<Particle_T>::StorageType;
-
-  /**
    * Dummy constructor.
    */
   ClusterTower() : _clusterSize(0) {}
@@ -379,7 +374,7 @@ class ClusterTower : public FullParticleCell<Particle_T> {
    * Get reference to internal particle vector.
    * @return
    */
-  StorageType &particleVector() { return this->_particles; }
+  std::vector<Particle_T> &particleVector() { return this->_particles; }
 
  private:
   /**

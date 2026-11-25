@@ -148,6 +148,10 @@ class ParticleContainerInterface {
  public:
   /**
    * Update a halo particle of the container with the given haloParticle.
+   * A stored particle is only updated if it has the same ID as haloParticle and is less than half the skin away from
+   * it.
+   * @note Several halo particles may have the same ID only if they are different periodic copies of the same particle.
+   * Such copies are expected to be at least cutoff + skin apart.
    * @param haloParticle Particle to be updated.
    * @return Returns true if the particle was updated, false if no particle could be found.
    */
@@ -405,23 +409,19 @@ class ParticleContainerInterface {
   }
 
   /**
-   * Deletes the given particle as long as this does not compromise the validity of the container.
-   * If this is not possible the particle is just marked as deleted.
-   * @note This function might be implemented via swap-delete and is thus not completely thread safe.
+   * Marks the given particle as deleted. No particle is moved by this. The particle is removed from the container when
+   * the container is rebuilt.
    * @param particle Reference to the particle that is to be deleted.
-   * @return True if the given pointer still points to a new particle.
    */
-  virtual bool deleteParticle(Particle_T &particle) = 0;
+  virtual void deleteParticle(Particle_T &particle) = 0;
 
   /**
-   * Deletes the particle at the given index positions as long as this does not compromise the validity of the
-   * container. If this is not possible the particle is just marked as deleted. If the positions do not exist the
-   * behavior is undefined.
+   * Marks the particle at the given index positions as deleted. No particle is moved by this. The particle is removed
+   * from the container when the container is rebuilt. If the positions do not exist the behavior is undefined.
    * @param cellIndex
    * @param particleIndex
-   * @return True if the given indices still point to a new particle.
    */
-  virtual bool deleteParticle(size_t cellIndex, size_t particleIndex) = 0;
+  virtual void deleteParticle(size_t cellIndex, size_t particleIndex) = 0;
 
  protected:
   /**

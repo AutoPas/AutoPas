@@ -237,17 +237,17 @@ class VerletClusterListsRebuilder {
   void updateNeighborLists() {
     const int maxTowerIndexX = _towerBlock.getTowersPerDim()[0] - 1;
     const int maxTowerIndexY = _towerBlock.getTowersPerDim()[1] - 1;
-    const auto numTowersPerInteractionLength = _towerBlock.getNumTowersPerInteractionLength();
+    const auto maxNumTowersPerInteractionLength = _towerBlock.getMaxNumTowersPerInteractionLength();
     // for all towers
     /// @todo: find sensible chunksize
     AUTOPAS_OPENMP(parallel for schedule(dynamic) collapse(2))
     for (int towerIndexY = 0; towerIndexY <= maxTowerIndexY; towerIndexY++) {
       for (int towerIndexX = 0; towerIndexX <= maxTowerIndexX; towerIndexX++) {
         // calculate extent of interesting tower 2D indices
-        const int minX = std::max(towerIndexX - numTowersPerInteractionLength, 0);
-        const int minY = std::max(towerIndexY - numTowersPerInteractionLength, 0);
-        const int maxX = std::min(towerIndexX + numTowersPerInteractionLength, maxTowerIndexX);
-        const int maxY = std::min(towerIndexY + numTowersPerInteractionLength, maxTowerIndexY);
+        const int minX = std::max(towerIndexX - maxNumTowersPerInteractionLength, 0);
+        const int minY = std::max(towerIndexY - maxNumTowersPerInteractionLength, 0);
+        const int maxX = std::min(towerIndexX + maxNumTowersPerInteractionLength, maxTowerIndexX);
+        const int maxY = std::min(towerIndexY + maxNumTowersPerInteractionLength, maxTowerIndexY);
 
         iterateNeighborTowers(towerIndexX, towerIndexY, minX, maxX, minY, maxY,
                               [this](auto &towerA, auto &towerB) { calculateNeighborsBetweenTowers(towerA, towerB); });
@@ -313,12 +313,12 @@ class VerletClusterListsRebuilder {
    * @return The index of the interaction cell containing the given tower.
    */
   int get1DInteractionCellIndexForTower(const int towerIndexX, const int towerIndexY) {
-    const auto numTowersPerInteractionLength = _towerBlock.getNumTowersPerInteractionLength();
-    const int interactionCellTowerX = towerIndexX / numTowersPerInteractionLength;
-    const int interactionCellTowerY = towerIndexY / numTowersPerInteractionLength;
+    const auto maxNumTowersPerInteractionLength = _towerBlock.getMaxNumTowersPerInteractionLength();
+    const int interactionCellTowerX = towerIndexX / maxNumTowersPerInteractionLength;
+    const int interactionCellTowerY = towerIndexY / maxNumTowersPerInteractionLength;
 
     const int numInteractionCellsX = static_cast<int>(
-        std::ceil(_towerBlock.getTowersPerDim()[0] / static_cast<double>(numTowersPerInteractionLength)));
+        std::ceil(_towerBlock.getTowersPerDim()[0] / static_cast<double>(maxNumTowersPerInteractionLength)));
 
     return interactionCellTowerX + numInteractionCellsX * interactionCellTowerY;
   }

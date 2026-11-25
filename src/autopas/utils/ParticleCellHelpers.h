@@ -11,36 +11,20 @@ namespace autopas::internal {
 /**
  * Updates a found particle within cellI to the values of particleI.
  * Checks whether a particle with the same id as particleI is within the cell
- * cellI and overwrites the particle with particleI, if it is found.
+ * cellI and close to particleI, and overwrites the particle with particleI, if it is found.
  * @param cell
  * @param particle
+ * @param absError maximal distance the previous particle is allowed to be away from the new particle.
  * @tparam CellType
  * @return true if the particle was updated, false otherwise.
- */
-template <class CellType>
-static bool checkParticleInCellAndUpdateByID(CellType &cell, const typename CellType::ParticleType &particle) {
-  for (auto &p : cell) {
-    if (p.getID() == particle.getID()) {
-      p = particle;
-      return true;
-    }
-  }
-  return false;
-}
-
-/**
- * Same as checkParticleInCellAndUpdateByID(CellType, ParticleType), but additionally checks whether the particle is
- * close to the other particle:
- * @copydoc checkParticleInCellAndUpdateByID()
- * @param absError maximal distance the previous particle is allowed to be away from the new particle.
- * @note This version is useful, if there might be more than one particle with the same id in the same cell.
+ * @note The position is checked, because there might be more than one particle with the same id in the same cell or in
+ * neighboring cells.
+ * @note The cell is not locked. If iterating the cell is not thread safe, the caller has to lock it.
  */
 template <class CellType>
 static bool checkParticleInCellAndUpdateByIDAndPosition(CellType &cell, const typename CellType::ParticleType &particle,
                                                         double absError) {
   using namespace autopas::utils::ArrayMath::literals;
-  // This lock is relevant for octree and directSum.
-  std::lock_guard<AutoPasLock> cellLock(cell.getCellLock());
   for (auto &p : cell) {
     if (p.getID() == particle.getID()) {
       auto distanceVec = p.getR() - particle.getR();

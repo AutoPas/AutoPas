@@ -861,6 +861,10 @@ TEST_F(TuningManagerTest, testOneConfig) {
 
 /**
  * Generates exactly one valid and one invalid configuration.
+ *
+ * The invalid configuration is rejected indefinitely in the first iteration, which leaves only one configuration. As
+ * the search space was not trivial initially, there are still proper tuning phases, in which this configuration is
+ * sampled.
  */
 TEST_F(TuningManagerTest, testConfigSecondInvalid) {
   constexpr unsigned int rebuildFrequency = 20;
@@ -869,7 +873,7 @@ TEST_F(TuningManagerTest, testConfigSecondInvalid) {
       .boxMax{10., 10., 10.},
   };
   constexpr autopas::AutoTunerInfo autoTunerInfo{
-      .tuningInterval = 1000,
+      .tuningInterval = 10,
       .maxSamples = 3,
   };
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
@@ -890,18 +894,91 @@ TEST_F(TuningManagerTest, testConfigSecondInvalid) {
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(false));
   EXPECT_CALL(functor, isVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
 
-  logicHandler.updateContainer();
-  logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
-  EXPECT_EQ(arbitraryConfigurations::_arbitrary_config_2B_2,
-            tuningManager->getCurrentConfig(autopas::InteractionTypeOption::pairwise));
-  logicHandler.updateContainer();
-  logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
-  EXPECT_EQ(arbitraryConfigurations::_arbitrary_config_2B_2,
-            tuningManager->getCurrentConfig(autopas::InteractionTypeOption::pairwise));
-  logicHandler.updateContainer();
-  logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
-  EXPECT_EQ(arbitraryConfigurations::_arbitrary_config_2B_2,
-            tuningManager->getCurrentConfig(autopas::InteractionTypeOption::pairwise));
+  // In each tuning phase, the remaining configuration is sampled maxSamples times.
+  constexpr size_t numTuningPhases = 2;
+  for (size_t iteration = 0; iteration < numTuningPhases * autoTunerInfo.tuningInterval; ++iteration) {
+    logicHandler.updateContainer();
+    const bool expectTuning = iteration % autoTunerInfo.tuningInterval < autoTunerInfo.maxSamples;
+    EXPECT_EQ(logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise),
+              expectTuning)
+        << "Iteration " << iteration;
+    EXPECT_EQ(arbitraryConfigurations::_arbitrary_config_2B_2,
+              tuningManager->getCurrentConfig(autopas::InteractionTypeOption::pairwise))
+        << "Iteration " << iteration;
+  }
+}
+
+void TuningManagerTest::testEndingTuningPhaseWithRejectedConfig(bool rejectIndefinitely) const {
+  constexpr autopas::AutoTunerInfo autoTunerInfo{.tuningInterval = 100, .maxSamples = 1};
+  constexpr unsigned int rebuildFrequency = 1;
+  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
+
+  const autopas::AutoTuner::SearchSpaceType searchSpace{
+      arbitraryConfigurations::_arbitrary_config_2B_0,
+      arbitraryConfigurations::_arbitrary_config_2B_1,
+      arbitraryConfigurations::_arbitrary_config_2B_2,
+      arbitraryConfigurations::_arbitrary_config_2B_5,
+  };
+
+  autopas::TuningManager tuningManager{autoTunerInfo};
+  tuningManager.addAutoTuner(
+      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""),
+      autopas::InteractionTypeOption::pairwise);
+  const auto &autoTuner = *tuningManager.getAutoTuners().at(autopas::InteractionTypeOption::pairwise);
+
+  const autopas::LiveInfo info{};
+  size_t iteration = 0;
+
+  // 1) Sample the first config.
+  EXPECT_TRUE(tuningManager.tune(iteration, info));
+  const auto config1 = tuningManager.getCurrentConfig(autopas::InteractionTypeOption::pairwise);
+  tuningManager.addMeasurement(180, 20, /*neighborListRebuilt*/ true, iteration,
+                               autopas::InteractionTypeOption::pairwise);
+  iteration++;
+
+  // 2) The second config is rejected, which should immediately give the third one.
+  EXPECT_TRUE(tuningManager.tune(iteration, info));
+  const auto config2 = tuningManager.getCurrentConfig(autopas::InteractionTypeOption::pairwise);
+  const auto [config3, stillTuningAfterReject2] =
+      tuningManager.rejectConfiguration(config2, rejectIndefinitely, autopas::InteractionTypeOption::pairwise);
+  EXPECT_TRUE(stillTuningAfterReject2);
+  EXPECT_NE(config3, config1);
+  EXPECT_NE(config3, config2);
+  EXPECT_FALSE(tuningManager.tuningPhaseJustFinished());
+
+  // 3) Sample the third config. Make it faster than the first one, so it becomes the optimum.
+  tuningManager.addMeasurement(90, 10, /*neighborListRebuilt*/ true, iteration,
+                               autopas::InteractionTypeOption::pairwise);
+  iteration++;
+
+  // 4) The final config is rejected, which ends the tuning phase.
+  EXPECT_TRUE(tuningManager.tune(iteration, info));
+  ASSERT_EQ(autoTuner.getConfigQueue().size(), 1) << "The rejected config has to be the last one of the tuning phase.";
+  const auto config4 = tuningManager.getCurrentConfig(autopas::InteractionTypeOption::pairwise);
+  const auto [configAfterReject4, stillTuningAfterReject4] =
+      tuningManager.rejectConfiguration(config4, rejectIndefinitely, autopas::InteractionTypeOption::pairwise);
+  EXPECT_FALSE(stillTuningAfterReject4);
+  EXPECT_EQ(configAfterReject4, config3);
+  EXPECT_TRUE(tuningManager.tuningPhaseJustFinished());
+  iteration++;
+
+  // The best config is used until the next tuning phase.
+  EXPECT_FALSE(tuningManager.tune(iteration, info));
+  EXPECT_FALSE(tuningManager.tuningPhaseJustFinished());
+  EXPECT_EQ(tuningManager.getCurrentConfig(autopas::InteractionTypeOption::pairwise), config3);
+}
+
+/**
+ * Tests that ending a tuning phase with a rejected configuration is handled the same way as ending it with a measured
+ * one.
+ *
+ * Mimics a TuningManager with one AutoTuner trialling four configurations. The second and the final configurations will
+ * be rejected. After the rejection of the final configuration, the tuning phase should be over and the best
+ * configuration should be selected.
+ */
+TEST_F(TuningManagerTest, testEndingTuningPhaseWithRejectedConfig) {
+  testEndingTuningPhaseWithRejectedConfig(true);
+  testEndingTuningPhaseWithRejectedConfig(false);
 }
 
 /**

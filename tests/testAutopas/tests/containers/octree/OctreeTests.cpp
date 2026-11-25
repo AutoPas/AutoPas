@@ -21,6 +21,8 @@
 #include "autopas/tuning/selectors/ContainerSelector.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "mocks/MockPairwiseFunctor.h"
+#include "testingHelpers/EmptyPairwiseFunctor.h"
+#include "tests/forEach/ForEachTestHelper.h"
 
 using ::testing::_;
 
@@ -527,6 +529,7 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
 
   // Perform the traversal
   mockFunctor.initTraversal();
+  container->rebuildNeighborLists(traversal.get());
   container->computeInteractions(traversal.get());
   mockFunctor.endTraversal(newton3Option);
 
@@ -735,4 +738,141 @@ TEST_F(OctreeTest, testLeafIDs) {
   }
 
   ASSERT_THAT(ids, ::testing::UnorderedElementsAreArray(expected));
+}
+
+/**
+ * Adds a particle while an owned particle has moved into the region of a neighboring leaf inside the domain, as if it
+ * moved there since the last container update. Splitting its old leaf at that moment used to lose the particle,
+ * because it fits into none of the new children. Checks that no particle is lost.
+ */
+TEST_F(OctreeTest, testAddParticleWhileOwnedParticleMovedToNeighborLeaf) {
+  using namespace autopas;
+
+  // The interaction length is 1.2, so the root [0,10)^3 can split into leaves of [0,5)^3, which can split once more.
+  Octree<Molecule> octree({0., 0., 0.}, {10., 10., 10.}, 1., 0.2, 1., 8, 100);
+  // 16 particles (the split threshold) in the leaf [0,5)^3 and one in [5,10)^3, so that the root splits.
+  for (size_t id = 0; id < 15; ++id) {
+    // Add 15 "boring" particles
+    octree.addParticle(Molecule({1. + 0.1 * static_cast<double>(id), 1., 1.}, {0., 0., 0.}, id));
+  }
+  // Add the particle which will move
+  octree.addParticle(Molecule({4.95, 1., 1.}, {0., 0., 0.}, 15));
+  // Add another to cause a split
+  octree.addParticle(Molecule({7., 7., 7.}, {0., 0., 0.}, 16));
+  ASSERT_TRUE(octree.updateContainer(false).empty());
+
+  // Particle 15 moves from the leaf [0,5)^3 into the leaf [5,10)x[0,5)x[0,5).
+  octree.forEach(
+      [](auto &particle) {
+        if (particle.getID() == 15) {
+          particle.setR({5.05, 1., 1.});
+        }
+      },
+      IteratorBehavior::owned);
+  // The leaf [0,5)^3 still holds 16 particles, so inserting this particle into it would split it.
+  // This addition would previously cause particle 15 to be lost.
+  octree.addParticle(Molecule({2.5, 2., 2.}, {0., 0., 0.}, 17));
+
+  EXPECT_TRUE(octree.updateContainer(false).empty());
+  constexpr size_t numParticles = 18;
+  EXPECT_EQ(octree.getNumberOfParticles(IteratorBehavior::owned), numParticles);
+  EXPECT_EQ(octree.size(), numParticles);
+}
+
+/**
+ * Particles added to the octree are only sorted into it by updateContainer() or rebuildNeighborLists(), otherwise they
+ * are left in _particlesToAdd. These are not included in force calculations as this is simply meant as a temporary
+ * buffer. Checks for an error if a force calculation is attempted with a particle in _particlesToAdd.
+ */
+TEST_F(OctreeTest, testComputeInteractionsThrowsWithUnsortedParticles) {
+  using namespace autopas;
+
+  constexpr double cutoff = 1.;
+  constexpr double skin = 0.2;
+  Octree<Molecule> octree({0., 0., 0.}, {10., 10., 10.}, cutoff, skin, 1., 8, 100);
+  EmptyPairwiseFunctor<Molecule> functor;
+  OTC18Traversal<Molecule, EmptyPairwiseFunctor<Molecule>> traversal(functor, cutoff, cutoff + skin,
+                                                                     DataLayoutOption::aos, true);
+
+  // The added particle.
+  octree.addParticle(Molecule({1., 1., 1.}, {0., 0., 0.}, 0));
+  EXPECT_ANY_THROW(octree.computeInteractions(&traversal));
+
+  // After rebuild should be valid
+  octree.rebuildNeighborLists(&traversal);
+  EXPECT_NO_THROW(octree.computeInteractions(&traversal));
+}
+
+/**
+ * Between rebuilds, particles can move out of their leaf by up to skin/2. Moves an owned and a halo particle out of
+ * their leaves and checks that forEachInRegion() and reduceInRegion() still find them in a region that overlaps only
+ * other leaves.
+ */
+TEST_F(OctreeTest, testForEachAndReduceInRegionFindParticlesThatLeftTheirLeaf) {
+  using namespace autopas;
+
+  constexpr double cutoff = 1.;
+  constexpr double skin = 0.2;
+  Octree<Molecule> octree({0., 0., 0.}, {10., 10., 10.}, cutoff, skin, 1., 8, 100);
+  EmptyPairwiseFunctor<Molecule> functor;
+  OTC18Traversal<Molecule, EmptyPairwiseFunctor<Molecule>> traversal(functor, cutoff, cutoff + skin,
+                                                                     DataLayoutOption::aos, true);
+
+  // Adds an owned particle at z = 1 and a halo particle with the ID offset by haloIDOffset at z = -0.5.
+  constexpr size_t haloIDOffset = 100;
+  auto addOwnedAndHaloParticle = [&](double x, double y, size_t id) {
+    octree.addParticle(Molecule({x, y, 1.}, {0., 0., 0.}, id));
+    Molecule haloParticle({x, y, -0.5}, {0., 0., 0.}, haloIDOffset + id);
+    haloParticle.setOwnershipState(OwnershipState::halo);
+    octree.addHaloParticle(haloParticle);
+  };
+  // The owned tree [0,10)^3 and the halo tree [-1.2,11.2)^3 are both centred at 5. In both, 16 particles (the split
+  // threshold) in the leaf left of x = 5 and one right of it make the root split.
+  for (size_t id = 0; id < 15; ++id) {
+    // Add 15 "boring" particles
+    addOwnedAndHaloParticle(1. + 0.1 * static_cast<double>(id), 1., id);
+  }
+  // Add the particle which will move
+  constexpr size_t moverID = 15;
+  addOwnedAndHaloParticle(4.97, 1., moverID);
+  // Add another to cause a split
+  addOwnedAndHaloParticle(7., 7., 16);
+  // updateContainer(false) would delete the halo particles, so the particles are sorted into the trees by this instead.
+  octree.rebuildNeighborLists(&traversal);
+
+  // Both movers move by 0.08 < skin/2 out of their leaf into the region of the leaf right of x = 5.
+  octree.forEach(
+      [&](auto &particle) {
+        if (particle.getID() % haloIDOffset == moverID) {
+          particle.setR({5.05, particle.getR()[1], particle.getR()[2]});
+        }
+      },
+      IteratorBehavior::ownedOrHalo);
+
+  const std::array<double, 3> regionMin{5.02, 0.5, -1.};
+  const std::array<double, 3> regionMax{6., 1.5, 1.5};
+  // Sanity check that the movers are in none of the leaves that overlap the region.
+  for (const auto cellType : {Octree<Molecule>::OWNED, Octree<Molecule>::HALO}) {
+    for (const auto *leaf : octree.getCells()[cellType].getRaw()->getLeavesInRange(regionMin, regionMax)) {
+      for (const auto &particle : *leaf) {
+        ASSERT_NE(particle.getID() % haloIDOffset, moverID)
+            << "The test setup does not move the particle out of its leaf.";
+      }
+    }
+  }
+
+  const std::vector<std::pair<IteratorBehavior, std::vector<size_t>>> expectedIDsByBehavior{
+      {IteratorBehavior::owned, {moverID}},
+      {IteratorBehavior::halo, {haloIDOffset + moverID}},
+      {IteratorBehavior::ownedOrHalo, {moverID, haloIDOffset + moverID}}};
+  for (const auto &behaviorAndExpectedIDs : expectedIDsByBehavior) {
+    const auto &behavior = behaviorAndExpectedIDs.first;
+    const auto &expectedIDs = behaviorAndExpectedIDs.second;
+    SCOPED_TRACE(behavior.to_string());
+    ForEachTestHelper::forEachParticleTest(
+        [&](auto lambda) { octree.forEachInRegion(lambda, regionMin, regionMax, behavior); }, expectedIDs);
+    ForEachTestHelper::reduceParticlesTest(
+        [&](auto lambda, size_t &result) { octree.reduceInRegion(lambda, result, regionMin, regionMax, behavior); },
+        expectedIDs);
+  }
 }

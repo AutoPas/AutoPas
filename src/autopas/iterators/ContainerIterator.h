@@ -20,6 +20,7 @@
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
+#include "autopas/utils/markParticleAsDeleted.h"
 
 namespace autopas {
 
@@ -365,35 +366,19 @@ class ContainerIterator {
   }
 
   /**
-   * Deletes the particle the particle currently pointed to. This function uses swap-delete and thus will change
-   * the order of elements in the container. After deletion _currentParticle points to the next particle,
-   * which is the particle that was swapped here. So when used in a loop do not increment the iterator after deletion.
+   * Deletes the particle currently pointed to. The particle is only marked as deleted i.e. as a dummy and is left in
+   * place until a container rebuild.
+   * After deletion _currentParticle points to the next particle, but the index is moved back by one. So incrementing
+   * the index results in the iterator arriving at the next particle correctly.
    */
   void deleteCurrentParticle() {
     if (_iteratingAdditionalVectors) {
-      // the current particle address needs to be between start and end of the current vector
-      // otherwise it is from the previous vector
-      auto &currentVector = *_additionalVectors[_currentVectorIndex];
-      // swap-delete
-      *_currentParticle = currentVector.back();
-      currentVector.pop_back();
-      // make sure _currentParticle always points to a valid particle if there is one.
-      if (currentVector.empty() or not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
-                                       *_currentParticle, _behavior, _regionMin, _regionMax)) {
-        this->operator++();
-      }
+      internal::markParticleAsDeleted(*_currentParticle);
     } else {
-      const auto indicesValid = _container->deleteParticle(_currentVectorIndex, _currentParticleIndex);
-      // Edge cases:
-      if (not indicesValid) {
-        // CASE: the indices and thus the pointer are invalid now
-        this->operator++();
-      } else if (not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
-                     *_currentParticle, _behavior, _regionMin, _regionMax)) {
-        // CASE: the particle was swapped and now the pointer points at something uninteresting
-        this->operator++();
-      }
+      _container->deleteParticle(_currentVectorIndex, _currentParticleIndex);
     }
+    // move on to the next particle, as the deleted one stays in place.
+    this->operator++();
     // move the current index back so that the next ++ points again to the same particle.
     --_currentParticleIndex;
   }
