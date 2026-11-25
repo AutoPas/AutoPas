@@ -12,10 +12,12 @@ file(
     "*.cuh"
 )
 
-
+# ON refers to standard dynamic rebuilding and OFF refers to the static rebuilding.
+# FPB refers to Dynamic Rebuilding with Fast Particles Buffer.
 set(AUTOPAS_ENABLE_DYNAMIC_CONTAINERS "ON"
     CACHE STRING "Dynamic container rebuilding: OFF, ON, or FPB")
 set_property(CACHE AUTOPAS_ENABLE_DYNAMIC_CONTAINERS PROPERTY STRINGS OFF ON FPB)
+
 
 string(TOUPPER "${AUTOPAS_ENABLE_DYNAMIC_CONTAINERS}" _dyn_mode)
 if(_dyn_mode MATCHES "^(1|TRUE|YES|Y)$")
