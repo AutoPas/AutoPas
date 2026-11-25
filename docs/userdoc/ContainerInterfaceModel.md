@@ -15,10 +15,13 @@ The particle neighbor lists are updated at a fixed rebuild frequency specified b
 This works well with an appropriately chosen `skin`. A warning is shown when particles move faster than expected.
 User can additionally enable throwing exception when a particle is too fast by passing `fastParticleThrow` as `true` in the input file. 
 
-### Dynamic Rebuilding
+### Standard Dynamic Rebuilding
 The particle neighbor lists are updated when a particle moves more than `verletSkin / 2` or at the rebuild frequency. 
 For this, every particle stores the position at which its neighbor list was rebuilt last in a member called `rAtRebuild`.
 This was implemented in the [PR 821](https://github.com/AutoPas/AutoPas/pull/821), so refer to it for more details.
+
+### Dynamic Rebuilding with Fast Particles Buffer (FPB)
+This approach builds upon the standard dynamic rebuilding. The fast moving particles, i.e. particles that move more than `verletSkin / 2`, are first added to a fast particles buffer. The rebuild is triggered when cost of buffer interactions starts dominating the neighbor list rebuilding cost. This was implemented in the [PR 1170](https://github.com/AutoPas/AutoPas/pull/1170), so refer to it for more details. It is important to note that this approach ignores the user defined rebuild frequency.
 
 ## Internal Container Behavior
 For Verlet list-based containers to perform efficiently, the aforementioned behavior is a problem, because they rely on their list references to not change until the next list rebuild.
