@@ -228,9 +228,8 @@ double sigmoid(double x);
  * @tparam T The type of the input data points. Must be convertible to double.
  * @param x The x values of the data points.
  * @param y The y values of the data points.
- * @return A pair containing the {y-intercept, slope} of the best-fit line, mirroring
- * boost::math::statistics::simple_ordinary_least_squares. Throws std::domain_error if fewer than 2 points or all x are
- * identical
+ * @return A pair containing the {y-intercept, slope} of the best-fit line. Throws an exception if fewer than 2 points
+ * are available or all x are identical
  */
 template <class T>
 requires std::convertible_to<T, double>
