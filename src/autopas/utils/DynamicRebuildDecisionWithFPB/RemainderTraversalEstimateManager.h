@@ -1,5 +1,5 @@
 /**
- * @file DynamicRebuildDecisionWithFPB.h
+ * @file RemainderTraversalEstimateManager.h
  * @author Manish Mishra
  * @date 25.11.2026
  */
