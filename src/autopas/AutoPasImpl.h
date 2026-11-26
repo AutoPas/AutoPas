@@ -166,14 +166,15 @@ void AutoPas<Particle_T>::reserve(size_t numParticles, size_t numHaloParticles) 
 
 template <class Particle_T>
 template <class F>
-void AutoPas<Particle_T>::addParticlesAux(size_t numParticlesToAdd, size_t numHalosToAdd, size_t collectionSize,
+void AutoPas<Particle_T>::addParticlesAux(size_t numParticlesToAdd, size_t numHalosToAdd, const size_t collectionSize,
                                           F loopBody) {
   reserve(getNumberOfParticles(IteratorBehavior::owned) + numParticlesToAdd,
           getNumberOfParticles(IteratorBehavior::halo) + numHalosToAdd);
-  AUTOPAS_OPENMP(parallel for schedule(static, std::max(1ul, collectionSize / omp_get_max_threads())))
-  for (auto i = 0; i < collectionSize; ++i) {
+  AUTOPAS_OPENMP(parallel for schedule(static))
+  for (size_t i = 0; i < collectionSize; ++i) {
     loopBody(i);
   }
+  _logicHandler->addToParticleCounters(numParticlesToAdd, numHalosToAdd);
 }
 
 template <class Particle_T>
@@ -184,16 +185,17 @@ void AutoPas<Particle_T>::addParticle(const Particle_T &p) {
 template <class Particle_T>
 template <class Collection>
 void AutoPas<Particle_T>::addParticles(Collection &&particles) {
-  addParticlesAux(particles.size(), 0, particles.size(), [&](auto i) { addParticle(particles[i]); });
+  addParticlesAux(particles.size(), 0, particles.size(),
+                  [&](auto i) { _logicHandler->template addParticle</* updateCounter */ false>(particles[i]); });
 }
 
 template <class Particle_T>
 template <class Collection, class F>
 void AutoPas<Particle_T>::addParticlesIf(Collection &&particles, F predicate) {
   std::vector<char> predicateMask(particles.size());
-  int numTrue = 0;
+  size_t numTrue = 0;
   AUTOPAS_OPENMP(parallel for reduction(+ : numTrue))
-  for (auto i = 0; i < particles.size(); ++i) {
+  for (size_t i = 0; i < particles.size(); ++i) {
     if (predicate(particles[i])) {
       predicateMask[i] = static_cast<char>(true);
       ++numTrue;
@@ -204,7 +206,7 @@ void AutoPas<Particle_T>::addParticlesIf(Collection &&particles, F predicate) {
 
   addParticlesAux(numTrue, 0, particles.size(), [&](auto i) {
     if (predicateMask[i]) {
-      addParticle(particles[i]);
+      _logicHandler->template addParticle</* updateCounter */ false>(particles[i]);
     }
   });
 }
@@ -241,16 +243,17 @@ void AutoPas<Particle_T>::addHaloParticle(const Particle_T &haloParticle) {
 template <class Particle_T>
 template <class Collection>
 void AutoPas<Particle_T>::addHaloParticles(Collection &&particles) {
-  addParticlesAux(0, particles.size(), particles.size(), [&](auto i) { addHaloParticle(particles[i]); });
+  addParticlesAux(0, particles.size(), particles.size(),
+                  [&](auto i) { _logicHandler->template addHaloParticle</* updateCounter */ false>(particles[i]); });
 }
 
 template <class Particle_T>
 template <class Collection, class F>
 void AutoPas<Particle_T>::addHaloParticlesIf(Collection &&particles, F predicate) {
   std::vector<char> predicateMask(particles.size());
-  int numTrue = 0;
+  size_t numTrue = 0;
   AUTOPAS_OPENMP(parallel for reduction(+ : numTrue))
-  for (auto i = 0; i < particles.size(); ++i) {
+  for (size_t i = 0; i < particles.size(); ++i) {
     if (predicate(particles[i])) {
       predicateMask[i] = static_cast<char>(true);
       ++numTrue;
@@ -261,7 +264,7 @@ void AutoPas<Particle_T>::addHaloParticlesIf(Collection &&particles, F predicate
 
   addParticlesAux(0, numTrue, particles.size(), [&](auto i) {
     if (predicateMask[i]) {
-      addHaloParticle(particles[i]);
+      _logicHandler->template addHaloParticle</* updateCounter */ false>(particles[i]);
     }
   });
 }

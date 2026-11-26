@@ -6,6 +6,7 @@
 
 #include "AutoPasTest.h"
 
+#include "autopas/AutoPasImpl.h"
 #include "testingHelpers/commonTypedefs.h"
 
 using ::testing::_;
@@ -248,4 +249,92 @@ TEST_F(AutoPasTest, getNumberOfParticlesIteratorTest) {
     --numParticles;
     expectedParticles(numParticles, 0);
   }
+}
+
+/**
+ * Verifies that bulk insertion methods (addParticles, addParticlesIf, addHaloParticles, addHaloParticlesIf)
+ * accurately update the owned and halo particle counters in both rebuild mode (direct container insertion)
+ * and non-rebuild mode (thread-private buffers and in-place halo updates).
+ */
+TEST_F(AutoPasTest, bulkAddParticlesCounterTest) {
+  auto countByIterator = [&](const autopas::IteratorBehavior behavior) {
+    size_t count = 0;
+    for (auto iter = autoPas.begin(behavior); iter.isValid(); ++iter) {
+      ++count;
+    }
+    return count;
+  };
+
+  auto checkCounts = [&](const size_t expectedOwned, const size_t expectedHalo) {
+    expectedParticles(expectedOwned, expectedHalo);
+    EXPECT_EQ(countByIterator(autopas::IteratorBehavior::owned), expectedOwned);
+    EXPECT_EQ(countByIterator(autopas::IteratorBehavior::halo), expectedHalo);
+  };
+
+  // --- Phase 1: Rebuild state (neighbor lists invalid -> direct container insertion) ---
+  std::vector<Molecule> ownedBatch1;
+  for (size_t i = 0; i < 20; ++i) {
+    ownedBatch1.emplace_back(std::array<double, 3>{1.0 + 0.2 * static_cast<double>(i), 1.0, 1.0},
+                             std::array<double, 3>{0.0, 0.0, 0.0}, i);
+  }
+  autoPas.addParticles(ownedBatch1);
+  checkCounts(20, 0);
+
+  std::vector<Molecule> ownedBatch2;
+  for (size_t i = 20; i < 34; ++i) {
+    ownedBatch2.emplace_back(std::array<double, 3>{1.0 + 0.2 * static_cast<double>(i - 20), 2.0, 1.0},
+                             std::array<double, 3>{0.0, 0.0, 0.0}, i);
+  }
+  // Only even IDs (7 particles) pass predicate.
+  autoPas.addParticlesIf(ownedBatch2, [](const auto &p) { return p.getID() % 2 == 0; });
+  checkCounts(27, 0);
+
+  std::vector<Molecule> haloBatch1;
+  for (size_t i = 100; i < 115; ++i) {
+    haloBatch1.emplace_back(std::array<double, 3>{-0.2, 1.0 + 0.2 * static_cast<double>(i - 100), 1.0},
+                            std::array<double, 3>{0.0, 0.0, 0.0}, i);
+  }
+  autoPas.addHaloParticles(haloBatch1);
+  checkCounts(27, 15);
+
+  std::vector<Molecule> haloBatch2;
+  for (size_t i = 200; i < 210; ++i) {
+    haloBatch2.emplace_back(std::array<double, 3>{10.2, 1.0 + 0.2 * static_cast<double>(i - 200), 1.0},
+                            std::array<double, 3>{0.0, 0.0, 0.0}, i);
+  }
+  // Only even IDs (5 particles) pass predicate.
+  autoPas.addHaloParticlesIf(haloBatch2, [](const auto &p) { return p.getID() % 2 == 0; });
+  checkCounts(27, 20);
+
+  // --- Phase 2: Valid neighbor-list state (non-rebuild -> thread-private buffers + updateHaloParticle) ---
+  LJFunctorType<> functor{autoPas.getCutoff()};
+  functor.setParticleProperties(1.0, 1.0);
+  autoPas.computeInteractions(&functor);
+  auto leaving = autoPas.updateContainer();
+  EXPECT_TRUE(leaving.empty());
+  // updateContainer marks/deletes all halos.
+  checkCounts(27, 0);
+
+  // Bulk add owned particles into thread-private _particleBuffer.
+  std::vector<Molecule> ownedBufferBatch;
+  for (size_t i = 300; i < 311; ++i) {
+    ownedBufferBatch.emplace_back(std::array<double, 3>{3.0, 3.0, 1.0 + 0.2 * static_cast<double>(i - 300)},
+                                  std::array<double, 3>{0.0, 0.0, 0.0}, i);
+  }
+  autoPas.addParticles(ownedBufferBatch);
+  checkCounts(38, 0);
+
+  // Bulk add halo particles: haloBatch1 updates existing halo(dummy) cells in place;
+  // haloBufferBatch goes into thread-private _haloParticleBuffer.
+  autoPas.addHaloParticles(haloBatch1);
+  checkCounts(38, 15);
+
+  std::vector<Molecule> haloBufferBatch;
+  for (size_t i = 400; i < 410; ++i) {
+    haloBufferBatch.emplace_back(std::array<double, 3>{10.3, 5.0, 1.0 + 0.2 * static_cast<double>(i - 400)},
+                                 std::array<double, 3>{0.0, 0.0, 0.0}, i);
+  }
+  // Only odd IDs (5 particles) pass predicate.
+  autoPas.addHaloParticlesIf(haloBufferBatch, [](const auto &p) { return p.getID() % 2 == 1; });
+  checkCounts(38, 20);
 }

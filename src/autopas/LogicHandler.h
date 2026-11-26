@@ -336,7 +336,12 @@ class LogicHandler {
 
   /**
    * @copydoc AutoPas::addParticle()
+   * @tparam updateCounter If true, increments _numParticlesOwned atomically. Set to false when batch-updating counters
+   * after a bulk insertion.
+   * @note When called with updateCounter=false, the number of particles MUST be updated manually afterwards by calling
+   * addToParticleCounters(numOwned, numHalos)
    */
+  template <bool updateCounter = true>
   void addParticle(const Particle_T &p) {
     // first check that the particle actually belongs in the container
     const auto &boxMin = _currentContainer->getBoxMin();
@@ -355,15 +360,22 @@ class LogicHandler {
       // Container has to (about to) be invalid to be able to add Particles!
       _currentContainer->template addParticle<false>(particleCopy);
     } else {
-      // If the container is valid, we add it to the particle buffer.
-      _particleBuffer[autopas_get_thread_num()].addParticle(particleCopy);
+      // If the container is valid, we add it to the thread-private particle buffer without locking.
+      _particleBuffer[autopas_get_thread_num()]._particles.push_back(particleCopy);
     }
-    _numParticlesOwned.fetch_add(1, std::memory_order_relaxed);
+    if constexpr (updateCounter) {
+      _numParticlesOwned.fetch_add(1, std::memory_order_relaxed);
+    }
   }
 
   /**
    * @copydoc AutoPas::addHaloParticle()
+   * @tparam updateCounter If true, increments _numParticlesHalo atomically. Set to false when batch-updating counters
+   * after a bulk insertion.
+   * @note When called with updateCounter=false, the number of particles MUST be updated manually afterwards by calling
+   * addToParticleCounters(numOwned, numHalos)
    */
+  template <bool updateCounter = true>
   void addHaloParticle(const Particle_T &haloParticle) {
     const auto &boxMin = _currentContainer->getBoxMin();
     const auto &boxMax = _currentContainer->getBoxMax();
@@ -384,11 +396,28 @@ class LogicHandler {
       // Check if we can update an existing halo(dummy) particle.
       bool updated = _currentContainer->updateHaloParticle(haloParticleCopy);
       if (not updated) {
-        // If we couldn't find an existing particle, add it to the halo particle buffer.
-        _haloParticleBuffer[autopas_get_thread_num()].addParticle(haloParticleCopy);
+        // If we couldn't find an existing particle, add it to the thread-private halo particle buffer without locking.
+        _haloParticleBuffer[autopas_get_thread_num()]._particles.push_back(haloParticleCopy);
       }
     }
-    _numParticlesHalo.fetch_add(1, std::memory_order_relaxed);
+    if constexpr (updateCounter) {
+      _numParticlesHalo.fetch_add(1, std::memory_order_relaxed);
+    }
+  }
+
+  /**
+   * Adds the given counts to the internal owned and halo particle counters.
+   * Intended for bulk insertions that disable per-particle counter updates.
+   * @param numOwned Number of owned particles added.
+   * @param numHalo Number of halo particles added.
+   */
+  void addToParticleCounters(const size_t numOwned, const size_t numHalo) {
+    if (numOwned > 0) {
+      _numParticlesOwned.fetch_add(numOwned, std::memory_order_relaxed);
+    }
+    if (numHalo > 0) {
+      _numParticlesHalo.fetch_add(numHalo, std::memory_order_relaxed);
+    }
   }
 
   /**
