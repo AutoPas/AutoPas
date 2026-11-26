@@ -242,3 +242,115 @@ TEST_F(CellBlock3DTest, testGetCellBoundingBox) {
   testCellBoundingBox({cellsPerDimensionWithHalo - 1, cellsPerDimensionWithHalo - 1, cellsPerDimensionWithHalo - 1},
                       boxMax, boxMax + desiredCellLength);
 }
+
+/**
+ * Tests whether updateHaloParticle() finds and updates matching halo particles in containing and neighboring halo
+ * cells while ignoring owned cells, mismatched IDs, and particles outside allowedDistance.
+ */
+TEST_F(CellBlock3DTest, testUpdateHaloParticle) {
+  constexpr double cellLength = 1.0;
+  constexpr std::array<double, 3> boxMin = {0.0, 0.0, 0.0};
+  constexpr std::array<double, 3> boxMax = {3.0, 3.0, 3.0};
+  std::vector<FMCell> cells;
+  autopas::internal::CellBlock3D<FMCell> cellBlock{cells, boxMin, boxMax, cellLength, 1.0};
+
+  // Case 1: Matching halo particle in its containing halo cell {0, 2, 2} is updated.
+  {
+    Molecule original({-0.5, 1.5, 1.5}, {0.0, 0.0, 0.0}, 1);
+    original.setOwnershipState(autopas::OwnershipState::halo);
+    cellBlock.getContainingCell(original.getR()).addParticle(original);
+
+    Molecule updated({-0.45, 1.5, 1.5}, {1.0, 2.0, 3.0}, 1);
+    updated.setOwnershipState(autopas::OwnershipState::halo);
+    EXPECT_TRUE(cellBlock.updateHaloParticle(updated, 0.1));
+
+    const auto &stored = cellBlock.getCell({0, 2, 2})[0];
+    EXPECT_EQ(stored.getR(), updated.getR());
+    EXPECT_EQ(stored.getV(), updated.getV());
+    cellBlock.clearHaloCells();
+  }
+
+  // Case 2: Halo particle moved across a cell boundary into an adjacent halo cell within allowedDistance.
+  {
+    // Original stored in halo cell {0, 0, 1}, updated position is in adjacent halo cell {0, 1, 1}.
+    Molecule original({-0.05, -0.02, 0.05}, {0.0, 0.0, 0.0}, 2);
+    original.setOwnershipState(autopas::OwnershipState::halo);
+    cellBlock.getContainingCell(original.getR()).addParticle(original);
+
+    Molecule updated({-0.05, 0.05, 0.05}, {4.0, 5.0, 6.0}, 2);
+    updated.setOwnershipState(autopas::OwnershipState::halo);
+    EXPECT_TRUE(cellBlock.updateHaloParticle(updated, 0.1));
+
+    const auto &stored = cellBlock.getCell({0, 0, 1})[0];
+    EXPECT_EQ(stored.getR(), updated.getR());
+    EXPECT_EQ(stored.getV(), updated.getV());
+    cellBlock.clearHaloCells();
+  }
+
+  // Case 3: Halo particle moved slightly into an owned cell -> still finds and updates it in the neighboring halo cell.
+  {
+    Molecule original({-0.02, 0.5, 0.5}, {0.0, 0.0, 0.0}, 3);
+    original.setOwnershipState(autopas::OwnershipState::halo);
+    cellBlock.getContainingCell(original.getR()).addParticle(original);
+
+    Molecule updated({0.02, 0.5, 0.5}, {2.0, 3.0, 4.0}, 3);
+    updated.setOwnershipState(autopas::OwnershipState::halo);
+    EXPECT_TRUE(cellBlock.updateHaloParticle(updated, 0.1));
+
+    const auto &stored = cellBlock.getCell({0, 1, 1})[0];
+    EXPECT_EQ(stored.getR(), updated.getR());
+    EXPECT_EQ(stored.getV(), updated.getV());
+    cellBlock.clearHaloCells();
+  }
+
+  // Case 4: Matching particle in a nearby owned cell must NOT be updated.
+  {
+    Molecule owned({0.02, 0.02, 0.02}, {0.0, 0.0, 0.0}, 4);
+    owned.setOwnershipState(autopas::OwnershipState::owned);
+    cellBlock.getContainingCell(owned.getR()).addParticle(owned);
+
+    Molecule haloUpdate({-0.02, 0.02, 0.02}, {9.0, 9.0, 9.0}, 4);
+    haloUpdate.setOwnershipState(autopas::OwnershipState::halo);
+    EXPECT_FALSE(cellBlock.updateHaloParticle(haloUpdate, 0.1));
+
+    const auto &stored = cellBlock.getCell({1, 1, 1})[0];
+    EXPECT_EQ(stored.getR(), owned.getR());
+    EXPECT_EQ(stored.getV(), owned.getV());
+    cellBlock.getCell({1, 1, 1}).clear();
+  }
+
+  // Case 5: Particle outside allowedDistance or with a mismatched ID is not updated.
+  {
+    Molecule original({-0.5, 1.5, 1.5}, {0.0, 0.0, 0.0}, 5);
+    original.setOwnershipState(autopas::OwnershipState::halo);
+    cellBlock.getContainingCell(original.getR()).addParticle(original);
+
+    Molecule wrongId({-0.48, 1.5, 1.5}, {1.0, 1.0, 1.0}, 99);
+    wrongId.setOwnershipState(autopas::OwnershipState::halo);
+    EXPECT_FALSE(cellBlock.updateHaloParticle(wrongId, 0.1));
+
+    Molecule tooFar({-0.3, 1.5, 1.5}, {1.0, 1.0, 1.0}, 5);
+    tooFar.setOwnershipState(autopas::OwnershipState::halo);
+    EXPECT_FALSE(cellBlock.updateHaloParticle(tooFar, 0.1));
+
+    const auto &stored = cellBlock.getCell({0, 2, 2})[0];
+    EXPECT_EQ(stored.getR(), original.getR());
+    EXPECT_EQ(stored.getV(), original.getV());
+    cellBlock.clearHaloCells();
+  }
+
+  // Case 6: Position deep inside owned domain does not update owned particles and returns false.
+  {
+    Molecule owned({1.5, 1.5, 1.5}, {0.0, 0.0, 0.0}, 6);
+    owned.setOwnershipState(autopas::OwnershipState::owned);
+    cellBlock.getContainingCell(owned.getR()).addParticle(owned);
+
+    Molecule haloUpdate({1.51, 1.5, 1.5}, {7.0, 8.0, 9.0}, 6);
+    haloUpdate.setOwnershipState(autopas::OwnershipState::halo);
+    EXPECT_FALSE(cellBlock.updateHaloParticle(haloUpdate, 0.1));
+
+    const auto &stored = cellBlock.getCell({2, 2, 2})[0];
+    EXPECT_EQ(stored.getR(), owned.getR());
+    EXPECT_EQ(stored.getV(), owned.getV());
+  }
+}
