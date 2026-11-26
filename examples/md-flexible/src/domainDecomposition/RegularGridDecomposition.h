@@ -275,6 +275,11 @@ class RegularGridDecomposition final : public DomainDecomposition {
    */
   std::vector<ParticleType> _haloParticles{};
 
+  /**
+   * Per-thread scratch buffers used to collect halo particles in parallel without reallocation.
+   */
+  std::vector<std::vector<ParticleType>> _threadHaloBuffers{};
+
 #if defined(MD_FLEXIBLE_ENABLE_ALLLBL)
   /**
    * The ALL load balancer used for diffuse load balancing
@@ -330,44 +335,51 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param boxMax upper right rear  corner of the region that is collected.
    * @param atGlobalBoundary Indicator if we are at a global boundary and periodics are necessary.
    * @param wrapAroundDistance Distance (incl sign for direction) that the particle needs to be relocated.
-   * @param haloParticlesBuffer in-out buffer for haloParticles#
+   * @param haloParticlesBuffer Backing storage buffer for halo particles (grown as needed, never shrunk).
+   * @param haloParticlesSize Logical number of active particles in haloParticlesBuffer; incremented by collected count.
    */
   void collectHaloParticlesAux(AutoPasType &autoPasContainer, size_t direction,
                                const std::array<double, _dimensionCount> &boxMin,
                                const std::array<double, _dimensionCount> &boxMax, bool atGlobalBoundary,
-                               double wrapAroundDistance, std::vector<ParticleType> &haloParticlesBuffer);
+                               double wrapAroundDistance, std::vector<ParticleType> &haloParticlesBuffer,
+                               size_t &haloParticlesSize);
   /**
    * Collects the halo particles for the left neighbour.
    * Halo particle positions will be wrapped around the global domain boundary if necessary.
    * @param autoPasContainer: The autopas container which owns the potential halo particles.
    * @param direction: The direction along which the neighbor is located.
-   * @param particlesForLeftNeighborBuffer in-out buffer for haloParticles.
+   * @param particlesForLeftNeighborBuffer Backing storage buffer for halo particles.
+   * @param bufferSize Logical number of active particles in particlesForLeftNeighborBuffer.
    */
   void collectHaloParticlesForLeftNeighbor(AutoPasType &autoPasContainer, size_t direction,
-                                           std::vector<ParticleType> &particlesForLeftNeighborBuffer);
+                                           std::vector<ParticleType> &particlesForLeftNeighborBuffer,
+                                           size_t &bufferSize);
 
   /**
    * Collects the halo particles for the right neighbor.
    * Halo particle positions will be wrapped around the global domain boundary if necessary.
    * @param autoPasContainer: The autopas container which owns the potential halo particles.
    * @param direction: The direction along which the neighbor is located.
-   * @param particlesForRightNeighborBuffer in-out buffer for haloParticles.
+   * @param particlesForRightNeighborBuffer Backing storage buffer for halo particles.
+   * @param bufferSize Logical number of active particles in particlesForRightNeighborBuffer.
    */
   void collectHaloParticlesForRightNeighbor(AutoPasType &autoPasContainer, size_t direction,
-                                            std::vector<ParticleType> &particlesForRightNeighborBuffer);
+                                            std::vector<ParticleType> &particlesForRightNeighborBuffer,
+                                            size_t &bufferSize);
 
   /**
-   * Categorizes the provided particles as particles for the left or the right neighbor and adds them to the respective
-   * output vector. Particle positions will be wrapped around the global domain boundary if necessary.
+   * Categorizes the provided particles as particles for the left or the right neighbor and writes them into the
+   * respective output vectors. Particle positions will be wrapped around the global domain boundary if necessary.
    * @param particles: The particles which need to be categorized.
    * @param direction: The index of the dimension along which the left and right neighbor lie.
-   * @return a tuple consisting of:
-   *    leftNeighborParticles: Contains the particles for the left neighbor after function execution.
-   *    rightNeighborParticles: Contains the particles for the right neighbor after function execution.
-   *    uncategorizedParticles: Contains particles which could neither be assigned to the left nor the right neighbor.
+   * @param leftNeighborParticles: Output buffer for particles heading to the left neighbor (cleared on entry).
+   * @param rightNeighborParticles: Output buffer for particles heading to the right neighbor (cleared on entry).
+   * @param uncategorizedParticles: Output buffer for particles heading to neither neighbor (cleared on entry).
    */
-  std::tuple<std::vector<ParticleType>, std::vector<ParticleType>, std::vector<ParticleType>>
-  categorizeParticlesIntoLeftAndRightNeighbor(const std::vector<ParticleType> &particles, size_t direction);
+  void categorizeParticlesIntoLeftAndRightNeighbor(const std::vector<ParticleType> &particles, size_t direction,
+                                                   std::vector<ParticleType> &leftNeighborParticles,
+                                                   std::vector<ParticleType> &rightNeighborParticles,
+                                                   std::vector<ParticleType> &uncategorizedParticles);
 
   /**
    * Balances the subdomains of the grid decomposition using the inverted pressure balancing algorithm.

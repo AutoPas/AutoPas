@@ -7,8 +7,11 @@
 
 #include <gmock/gmock-matchers.h>
 
+#include <algorithm>
+
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/WrapMPI.h"
+#include "autopas/utils/WrapOpenMP.h"
 #include "src/TypeDefinitions.h"
 #include "src/configuration/MDFlexConfig.h"
 #include "src/domainDecomposition/DomainTools.h"
@@ -267,4 +270,218 @@ TEST_F(RegularGridDecompositionTest, testExchangeMigratingParticles) {
   // check expectations
   EXPECT_EQ(autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned), positionsOutsideSubdomain.size());
   autoPasContainer->forEach([&](const auto &p) { EXPECT_THAT(expectedPositions, ::testing::Contains(p.getR())); });
+}
+
+/**
+ * Verifies multi-threaded RegularGridDecomposition::exchangeHaloParticles with LinkedCells (multiple cells per thread),
+ * checking both that parallel collection + corner-halo filtering matches a 1-thread reference and that shrinking the
+ * active halo count on a subsequent step does not leak stale particles from the high-water-mark _haloParticles buffer.
+ */
+TEST_F(RegularGridDecompositionTest, testExchangeHaloParticlesParallelAndHighWaterMark) {
+  int numRanks = 1;
+  autopas::AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &numRanks);
+  if (numRanks != 1) {
+    GTEST_SKIP() << "This test targets single-rank multi-threaded periodic halo exchange.";
+  }
+
+  const int savedMaxThreads = autopas::autopas_get_max_threads();
+  struct ThreadCountRestorer {
+    int n;
+    ~ThreadCountRestorer() { autopas::autopas_set_num_threads(n); }
+  } restorer{savedMaxThreads};
+
+  auto makeSetup = []() {
+    MDFlexConfig config(0, nullptr);
+    config.boxMin.value = {0., 0., 0.};
+    config.boxMax.value = {10., 10., 10.};
+    config.cutoff.value = 2.0;
+    config.verletSkinRadius.value = 0.5;
+    config.verletRebuildFrequency.value = 2;
+    config.subdivideDimension.value = {true, true, true};
+    config.boundaryOption.value = {options::BoundaryTypeOption::periodic, options::BoundaryTypeOption::periodic,
+                                   options::BoundaryTypeOption::periodic};
+
+    auto decomp = std::make_shared<RegularGridDecomposition>(config);
+    auto container = std::make_shared<autopas::AutoPas<ParticleType>>();
+    container->setBoxMin(decomp->getLocalBoxMin());
+    container->setBoxMax(decomp->getLocalBoxMax());
+    container->setCutoff(config.cutoff.value);
+    container->setVerletSkin(config.verletSkinRadius.value);
+    container->setVerletRebuildFrequency(config.verletRebuildFrequency.value);
+    container->setAllowedContainers({autopas::ContainerOption::linkedCells});
+    container->setAllowedTraversals({autopas::TraversalOption::lc_c08});
+    container->init();
+
+    // Place 1 particle at the center of every cell in the 4x4x4 owned cell grid (64 particles total).
+    size_t id = 0;
+    for (int z = 0; z < 4; ++z) {
+      for (int y = 0; y < 4; ++y) {
+        for (int x = 0; x < 4; ++x) {
+          const std::array<double, 3> pos{1.25 + 2.5 * x, 1.25 + 2.5 * y, 1.25 + 2.5 * z};
+#if MD_FLEXIBLE_MODE == MULTISITE
+          ParticleType p(pos, {0., 0., 0.}, {0.7071067811865475, 0.7071067811865475, 0., 0.}, {0., 0., 0.}, id++);
+#else
+          ParticleType p(pos, {0., 0., 0.}, id++);
+#endif
+          container->addParticle(p);
+        }
+      }
+    }
+    return std::make_pair(container, decomp);
+  };
+
+  auto collectSortedHalos = [](autopas::AutoPas<ParticleType> &container) {
+    std::vector<std::pair<size_t, std::array<double, 3>>> halos;
+    for (auto iter = container.begin(autopas::IteratorBehavior::halo); iter.isValid(); ++iter) {
+      halos.emplace_back(iter->getID(), iter->getR());
+    }
+    std::sort(halos.begin(), halos.end());
+    return halos;
+  };
+
+  // Run reference (1 thread) and parallel (4 threads) in separate scopes so only one AutoPas instance
+  // (and its IterationLogger when AUTOPAS_LOG_ITERATIONS=ON) exists at a time.
+  auto runTwoSteps = [&](int numThreads) {
+    autopas::autopas_set_num_threads(numThreads);
+    auto [container, decomp] = makeSetup();
+    (void)container->updateContainer();
+    decomp->exchangeHaloParticles(*container);
+    auto halosStep1 = collectSortedHalos(*container);
+
+    // Step 2: Delete half of the owned particles so haloCount shrinks below _haloParticles.size() (high-water mark).
+    for (auto iter = container->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+      if (iter->getID() % 2 == 0) {
+        container->deleteParticle(iter);
+      }
+    }
+    (void)container->updateContainer();
+    decomp->exchangeHaloParticles(*container);
+    auto halosStep2 = collectSortedHalos(*container);
+    const size_t haloCountStep2 = container->getNumberOfParticles(autopas::IteratorBehavior::halo);
+    return std::make_tuple(std::move(halosStep1), std::move(halosStep2), haloCountStep2);
+  };
+
+  // Reference run with 1 thread.
+  const auto [refHalosStep1, refHalosStep2, refHaloCountStep2] = runTwoSteps(1);
+  ASSERT_GT(refHalosStep1.size(), 100ul);
+  ASSERT_LT(refHalosStep2.size(), refHalosStep1.size());
+  EXPECT_EQ(refHaloCountStep2, refHalosStep2.size());
+
+  // Multi-threaded run with 4 threads (triggers non-empty _threadHaloBuffers on multiple threads).
+  const auto [parHalosStep1, parHalosStep2, parHaloCountStep2] = runTwoSteps(4);
+
+  EXPECT_EQ(parHalosStep1.size(), refHalosStep1.size());
+  EXPECT_EQ(parHalosStep1, refHalosStep1);
+  EXPECT_EQ(parHaloCountStep2, refHalosStep2.size());
+  EXPECT_EQ(parHalosStep2, refHalosStep2);
+}
+
+/**
+ * Verifies that multi-threaded RegularGridDecomposition::reflectParticlesAtBoundaries produces identical
+ * repulsive forces on particles distributed across multiple LinkedCells cells near all 6 reflective walls
+ * compared to single-threaded execution.
+ */
+TEST_F(RegularGridDecompositionTest, testReflectParticlesAtBoundariesParallel) {
+  int numRanks = 1;
+  autopas::AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &numRanks);
+  if (numRanks != 1) {
+    GTEST_SKIP() << "This test targets single-rank multi-threaded reflective boundaries.";
+  }
+
+  const int savedMaxThreads = autopas::autopas_get_max_threads();
+  struct ThreadCountRestorer {
+    int n;
+    ~ThreadCountRestorer() { autopas::autopas_set_num_threads(n); }
+  } restorer{savedMaxThreads};
+
+  auto makeSetup = []() {
+    MDFlexConfig config(0, nullptr);
+    config.epsilonMap.value.clear();
+    config.sigmaMap.value.clear();
+    config.massMap.value.clear();
+    config.boxMin.value = {0., 0., 0.};
+    config.boxMax.value = {5., 5., 5.};
+    config.cutoff.value = 1.0;
+    config.verletSkinRadius.value = 0.25;
+    config.verletRebuildFrequency.value = 10;
+    config.subdivideDimension.value = {true, true, true};
+    config.boundaryOption.value = {options::BoundaryTypeOption::reflective, options::BoundaryTypeOption::reflective,
+                                   options::BoundaryTypeOption::reflective};
+    config.addSiteType(0, 1.0);
+    config.addLJParametersToSite(0, 1.0, 1.0);
+
+    auto decomp = std::make_shared<RegularGridDecomposition>(config);
+    auto container = std::make_shared<autopas::AutoPas<ParticleType>>();
+    container->setBoxMin(decomp->getLocalBoxMin());
+    container->setBoxMax(decomp->getLocalBoxMax());
+    container->setCutoff(config.cutoff.value);
+    container->setVerletSkin(config.verletSkinRadius.value);
+    container->setVerletRebuildFrequency(config.verletRebuildFrequency.value);
+    container->setAllowedContainers({autopas::ContainerOption::linkedCells});
+    container->setAllowedTraversals({autopas::TraversalOption::lc_c08});
+    container->init();
+
+    auto ppl = std::make_shared<ParticlePropertiesLibraryType>(config.cutoff.value);
+    ppl->addSiteType(0, 1.0);
+    ppl->addLJParametersToSite(0, 1.0, 1.0);
+#if MD_FLEXIBLE_MODE == MULTISITE
+    ppl->addMolType(0, {0}, {{0., 0., 0.}}, {1., 1., 1.});
+#endif
+    ppl->calculateMixingCoefficients();
+
+    // Place particles within the reflective skin (distance 0.35 < 2^(1/6)*0.5) near all 6 faces across a 4x4 grid.
+    size_t id = 0;
+    const std::array<double, 4> gridCoords{0.6, 1.85, 3.15, 4.4};
+    for (int dim = 0; dim < 3; ++dim) {
+      for (double wallCoord : {0.35, 4.65}) {
+        for (double u : gridCoords) {
+          for (double v : gridCoords) {
+            std::array<double, 3> pos{};
+            pos[dim] = wallCoord;
+            pos[(dim + 1) % 3] = u;
+            pos[(dim + 2) % 3] = v;
+#if MD_FLEXIBLE_MODE == MULTISITE
+            ParticleType p(pos, {0., 0., 0.}, {1., 0., 0., 0.}, {0., 0., 0.}, id++);
+#else
+            ParticleType p(pos, {0., 0., 0.}, id++);
+#endif
+            container->addParticle(p);
+          }
+        }
+      }
+    }
+    return std::make_tuple(container, decomp, ppl);
+  };
+
+  auto collectForces = [](autopas::AutoPas<ParticleType> &container) {
+    std::vector<std::pair<size_t, std::array<double, 3>>> forces;
+    for (auto iter = container.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+      forces.emplace_back(iter->getID(), iter->getF());
+    }
+    std::sort(forces.begin(), forces.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
+    return forces;
+  };
+
+  // Run reference (1 thread) and parallel (4 threads) in separate scopes so only one AutoPas instance
+  // (and its IterationLogger when AUTOPAS_LOG_ITERATIONS=ON) exists at a time.
+  auto runReflect = [&](int numThreads) {
+    autopas::autopas_set_num_threads(numThreads);
+    auto [container, decomp, ppl] = makeSetup();
+    decomp->reflectParticlesAtBoundaries(*container, *ppl);
+    return collectForces(*container);
+  };
+
+  const auto refForces = runReflect(1);
+  const auto parForces = runReflect(4);
+
+  ASSERT_EQ(parForces.size(), refForces.size());
+  ASSERT_EQ(parForces.size(), 96ul);
+  for (size_t i = 0; i < refForces.size(); ++i) {
+    EXPECT_EQ(parForces[i].first, refForces[i].first);
+    const double forceNormSq = autopas::utils::ArrayMath::dot(refForces[i].second, refForces[i].second);
+    EXPECT_GT(forceNormSq, 0.0);
+    for (size_t d = 0; d < 3; ++d) {
+      EXPECT_NEAR(parForces[i].second[d], refForces[i].second[d], 1e-12);
+    }
+  }
 }
