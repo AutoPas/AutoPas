@@ -21,7 +21,6 @@
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ArrayMath.h"
-#include "autopas/utils/ParticleCellHelpers.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
@@ -100,10 +99,8 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
    */
   bool updateHaloParticle(const Particle_T &haloParticle) override {
     const auto skinHalf = 0.5 * this->getVerletSkin();
-    const bool updated = _cellBlock.forEachNearbyHaloCell(haloParticle.getR(), skinHalf, [&](auto &cell) {
-      return internal::checkParticleInCellAndUpdateByIDAndPosition(cell, haloParticle, skinHalf);
-    });
-    if (updated) {
+    const bool updateSuccessful = _cellBlock.updateHaloParticle(haloParticle, skinHalf);
+    if (updateSuccessful) {
       return true;
     }
     AutoPasLog(TRACE, "UpdateHaloParticle was not able to update particle: {}", haloParticle.toString());

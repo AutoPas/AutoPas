@@ -17,6 +17,7 @@
 #include "autopas/options/IteratorBehavior.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/ParticleCellHelpers.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/inBox.h"
 
@@ -177,56 +178,15 @@ class CellBlock3D : public CellBorderAndFlagManager {
   void clearHaloCells();
 
   /**
-   * Invokes a callback on each halo cell that is at least partially within allowedDistance of the given position.
-   * Always checks the cell containing position first (if it is a halo cell) before computing neighboring cell bounds.
-   * Stops early and returns true as soon as func(cell) returns true.
+   * Searches for a halo particle matching haloParticle (by ID and within allowedDistance) in nearby halo cells
+   * and overwrites it if found.
    * @note The 1-norm (per-dimension Manhattan bounds) is used to determine nearby cells.
    *
-   * @tparam Func Callable with signature bool(ParticleCell &).
-   * @param position Cells close to this position are visited.
-   * @param allowedDistance The maximal distance to the position.
-   * @param func Callback invoked for each nearby halo cell; returning true terminates iteration early.
-   * @return True iff func returned true for one of the visited halo cells.
+   * @param haloParticle The updated halo particle to search for and write.
+   * @param allowedDistance The maximal distance the previous particle is allowed to be away from haloParticle.
+   * @return True iff a matching halo particle was found and updated.
    */
-  template <typename Func>
-  bool forEachNearbyHaloCell(const std::array<double, 3> &position, const double allowedDistance, Func &&func) const {
-    using namespace autopas::utils::ArrayMath::literals;
-
-    const auto index3D = get3DIndexOfPosition(position);
-    const auto index1D = threeToOneD(index3D);
-
-    // First, check the cell the particle is currently in if it is a halo cell.
-    if ((*_cells)[index1D].getPossibleParticleOwnerships() == OwnershipState::halo) {
-      if (func((*_cells)[index1D])) {
-        return true;
-      }
-    }
-
-    // Second, check neighboring halo cells within allowedDistance.
-    // These indices are (already) at least 0 and at most _cellsPerDimensionWithHalo[i]-1.
-    const auto lowIndex3D = get3DIndexOfPosition(position - allowedDistance);
-    const auto highIndex3D = get3DIndexOfPosition(position + allowedDistance);
-
-    auto currentIndex3D = lowIndex3D;
-    for (currentIndex3D[0] = lowIndex3D[0]; currentIndex3D[0] <= highIndex3D[0]; ++currentIndex3D[0]) {
-      for (currentIndex3D[1] = lowIndex3D[1]; currentIndex3D[1] <= highIndex3D[1]; ++currentIndex3D[1]) {
-        for (currentIndex3D[2] = lowIndex3D[2]; currentIndex3D[2] <= highIndex3D[2]; ++currentIndex3D[2]) {
-          // We have already checked the cell containing position, so skip it here.
-          if (currentIndex3D == index3D) {
-            continue;
-          }
-          const auto currentIndex1D = threeToOneD(currentIndex3D);
-          if ((*_cells)[currentIndex1D].getPossibleParticleOwnerships() == OwnershipState::halo) {
-            if (func((*_cells)[currentIndex1D])) {
-              return true;
-            }
-          }
-        }
-      }
-    }
-
-    return false;
-  }
+  bool updateHaloParticle(const typename ParticleCell::ParticleType &haloParticle, double allowedDistance);
 
   /**
    * Get the lower corner of the halo region.
@@ -545,5 +505,47 @@ void CellBlock3D<ParticleCell>::clearHaloCells() {
       }
     }
   }
+}
+
+template <class ParticleCell>
+bool CellBlock3D<ParticleCell>::updateHaloParticle(const typename ParticleCell::ParticleType &haloParticle,
+                                                   double allowedDistance) {
+  using namespace autopas::utils::ArrayMath::literals;
+
+  const auto &position = haloParticle.getR();
+  const auto index3D = get3DIndexOfPosition(position);
+  const auto index1D = threeToOneD(index3D);
+
+  // First, check the cell the particle is currently in if it is a halo cell.
+  if ((*_cells)[index1D].getPossibleParticleOwnerships() == OwnershipState::halo) {
+    if (checkParticleInCellAndUpdateByIDAndPosition((*_cells)[index1D], haloParticle, allowedDistance)) {
+      return true;
+    }
+  }
+
+  // Second, check neighboring halo cells within allowedDistance.
+  // These indices are (already) at least 0 and at most _cellsPerDimensionWithHalo[i]-1.
+  const auto lowIndex3D = get3DIndexOfPosition(position - allowedDistance);
+  const auto highIndex3D = get3DIndexOfPosition(position + allowedDistance);
+
+  auto currentIndex3D = lowIndex3D;
+  for (currentIndex3D[0] = lowIndex3D[0]; currentIndex3D[0] <= highIndex3D[0]; ++currentIndex3D[0]) {
+    for (currentIndex3D[1] = lowIndex3D[1]; currentIndex3D[1] <= highIndex3D[1]; ++currentIndex3D[1]) {
+      for (currentIndex3D[2] = lowIndex3D[2]; currentIndex3D[2] <= highIndex3D[2]; ++currentIndex3D[2]) {
+        // We have already checked the cell containing position, so skip it here.
+        if (currentIndex3D == index3D) {
+          continue;
+        }
+        const auto currentIndex1D = threeToOneD(currentIndex3D);
+        if ((*_cells)[currentIndex1D].getPossibleParticleOwnerships() == OwnershipState::halo) {
+          if (checkParticleInCellAndUpdateByIDAndPosition((*_cells)[currentIndex1D], haloParticle, allowedDistance)) {
+            return true;
+          }
+        }
+      }
+    }
+  }
+
+  return false;
 }
 }  // namespace autopas::internal

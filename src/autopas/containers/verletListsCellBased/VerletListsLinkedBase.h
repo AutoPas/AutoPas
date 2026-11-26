@@ -10,7 +10,6 @@
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/utils/ArrayMath.h"
-#include "autopas/utils/ParticleCellHelpers.h"
 #include "autopas/utils/markParticleAsDeleted.h"
 
 namespace autopas {
@@ -191,11 +190,8 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle_T> {
    */
   bool updateHaloParticle(const Particle_T &haloParticle) override {
     const auto skinHalf = 0.5 * this->getVerletSkin();
-    const bool updated =
-        _linkedCells.getCellBlock().forEachNearbyHaloCell(haloParticle.getR(), skinHalf, [&](auto &cell) {
-          return internal::checkParticleInCellAndUpdateByIDAndPosition(cell, haloParticle, skinHalf);
-        });
-    if (updated) {
+    const bool updateSuccessful = _linkedCells.getCellBlock().updateHaloParticle(haloParticle, skinHalf);
+    if (updateSuccessful) {
       return true;
     }
     AutoPasLog(TRACE,
