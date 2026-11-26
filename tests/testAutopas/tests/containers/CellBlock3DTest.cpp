@@ -6,6 +6,7 @@
 
 #include "CellBlock3DTest.h"
 
+#include "autopas/iterators/ContainerIterator.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/generators/GridGenerator.h"
 
@@ -352,5 +353,99 @@ TEST_F(CellBlock3DTest, testUpdateHaloParticle) {
     const auto &stored = cellBlock.getCell({2, 2, 2})[0];
     EXPECT_EQ(stored.getR(), owned.getR());
     EXPECT_EQ(stored.getV(), owned.getV());
+  }
+}
+
+/**
+ * Verifies CellBlock3D::getNextParticle for dummy-including IteratorBehaviors (dummy-only, owned|dummy in halo cells,
+ * halo|dummy in owned cells) and for region searches starting from an off-box cursor.
+ */
+TEST_F(CellBlock3DTest, testGetNextParticleDummyAndOffBoxCursor) {
+  // 5x5x5 grid with halo: owned cells are {1..3, 1..3, 1..3}, halo cells are on indices 0 and 4.
+  constexpr double cellLength = 1.0;
+  constexpr std::array<double, 3> boxMin = {0.0, 0.0, 0.0};
+  constexpr std::array<double, 3> boxMax = {3.0, 3.0, 3.0};
+  std::vector<FMCell> cells;
+  autopas::internal::CellBlock3D<FMCell> cellBlock{cells, boxMin, boxMax, cellLength, 1.0};
+
+  // Add a dummy particle and a live owned particle in the first owned cell {1, 1, 1}.
+  Molecule dummyOwned({0.5, 0.5, 0.5}, {0., 0., 0.}, 10);
+  dummyOwned.setOwnershipState(autopas::OwnershipState::dummy);
+  Molecule liveOwned({0.6, 0.6, 0.6}, {0., 0., 0.}, 11);
+  liveOwned.setOwnershipState(autopas::OwnershipState::owned);
+  cellBlock.getCell({1, 1, 1}).addParticle(dummyOwned);
+  cellBlock.getCell({1, 1, 1}).addParticle(liveOwned);
+
+  // Add a dummy particle in halo cell {0, 2, 2}.
+  Molecule dummyInHalo({-0.5, 1.5, 1.5}, {0., 0., 0.}, 20);
+  dummyInHalo.setOwnershipState(autopas::OwnershipState::dummy);
+  cellBlock.getCell({0, 2, 2}).addParticle(dummyInHalo);
+
+  // Add a dummy particle and a live owned particle in owned cell {2, 2, 2}.
+  Molecule dummyInOwnedCenter({1.5, 1.5, 1.5}, {0., 0., 0.}, 30);
+  dummyInOwnedCenter.setOwnershipState(autopas::OwnershipState::dummy);
+  Molecule liveInOwnedCenter({1.6, 1.6, 1.6}, {0., 0., 0.}, 31);
+  liveInOwnedCenter.setOwnershipState(autopas::OwnershipState::owned);
+  cellBlock.getCell({2, 2, 2}).addParticle(dummyInOwnedCenter);
+  cellBlock.getCell({2, 2, 2}).addParticle(liveInOwnedCenter);
+
+  // Case 1: dummy | forceSequential (non-region) must find all 3 dummy particles and skip live particles.
+  {
+    const auto behavior = autopas::IteratorBehavior::dummy | autopas::IteratorBehavior::forceSequential;
+    auto pred = [&](const Molecule &p) {
+      return autopas::containerIteratorUtils::particleFulfillsIteratorRequirements<false>(p, behavior, boxMin, boxMax);
+    };
+    std::vector<size_t> foundIds;
+    auto [ptr, cIdx, pIdx] = cellBlock.getNextParticle<false>(0, 0, behavior, boxMin, boxMax, 0.0, pred);
+    while (ptr != nullptr) {
+      foundIds.push_back(ptr->getID());
+      std::tie(ptr, cIdx, pIdx) = cellBlock.getNextParticle<false>(cIdx, pIdx + 1, behavior, boxMin, boxMax, 0.0, pred);
+    }
+    std::sort(foundIds.begin(), foundIds.end());
+    EXPECT_EQ(foundIds, (std::vector<size_t>{10, 20, 30}));
+  }
+
+  // Case 2: owned | dummy region selecting only halo cell {0, 2, 2} must not clamp out the halo cell.
+  {
+    constexpr std::array<double, 3> regMin{-0.9, 1.1, 1.1};
+    constexpr std::array<double, 3> regMax{-0.1, 1.9, 1.9};
+    const auto behavior = autopas::IteratorBehavior::owned | autopas::IteratorBehavior::dummy |
+                          autopas::IteratorBehavior::forceSequential;
+    auto pred = [&](const Molecule &p) {
+      return autopas::containerIteratorUtils::particleFulfillsIteratorRequirements<true>(p, behavior, regMin, regMax);
+    };
+    const auto [ptr, cIdx, pIdx] = cellBlock.getNextParticle<true>(0, 0, behavior, regMin, regMax, 0.0, pred);
+    ASSERT_NE(ptr, nullptr);
+    EXPECT_EQ(ptr->getID(), 20);
+  }
+
+  // Case 3: halo | dummy region selecting only owned cell {2, 2, 2} must not skip the owned cell.
+  {
+    constexpr std::array<double, 3> regMin{1.1, 1.1, 1.1};
+    constexpr std::array<double, 3> regMax{1.9, 1.9, 1.9};
+    const auto behavior =
+        autopas::IteratorBehavior::halo | autopas::IteratorBehavior::dummy | autopas::IteratorBehavior::forceSequential;
+    auto pred = [&](const Molecule &p) {
+      return autopas::containerIteratorUtils::particleFulfillsIteratorRequirements<true>(p, behavior, regMin, regMax);
+    };
+    const auto [ptr, cIdx, pIdx] = cellBlock.getNextParticle<true>(0, 0, behavior, regMin, regMax, 0.0, pred);
+    ASSERT_NE(ptr, nullptr);
+    EXPECT_EQ(ptr->getID(), 30);
+  }
+
+  // Case 4: Off-box region cursor (cell {0, 2, 2} with particleIndex = 1) for region {2, 2, 2}..{3, 3, 3}
+  // must not underflow and must find the owned particle in {2, 2, 2}.
+  {
+    constexpr std::array<double, 3> regMin{1.1, 1.1, 1.1};
+    constexpr std::array<double, 3> regMax{2.9, 2.9, 2.9};
+    const auto behavior = autopas::IteratorBehavior::owned | autopas::IteratorBehavior::forceSequential;
+    auto pred = [&](const Molecule &p) {
+      return autopas::containerIteratorUtils::particleFulfillsIteratorRequirements<true>(p, behavior, regMin, regMax);
+    };
+    const size_t offBoxCellIdx = cellBlock.get1DIndexOfPosition({-0.5, 1.5, 1.5});
+    const auto [ptr, cIdx, pIdx] =
+        cellBlock.getNextParticle<true>(offBoxCellIdx, 1, behavior, regMin, regMax, 0.0, pred);
+    ASSERT_NE(ptr, nullptr);
+    EXPECT_EQ(ptr->getID(), 31);
   }
 }

@@ -244,59 +244,11 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
                                                                  IteratorBehavior iteratorBehavior,
                                                                  const std::array<double, 3> &boxMin,
                                                                  const std::array<double, 3> &boxMax) const {
-    using namespace autopas::utils::ArrayMath::literals;
-
-    std::array<double, 3> boxMinWithSafetyMargin = boxMin;
-    std::array<double, 3> boxMaxWithSafetyMargin = boxMax;
-    if constexpr (regionIter) {
-      // We extend the search box for cells here since particles might have moved
-      boxMinWithSafetyMargin -= this->getVerletSkin();
-      boxMaxWithSafetyMargin += this->getVerletSkin();
-    }
-
-    // first and last relevant cell index
-    const auto [startCellIndex, endCellIndex] = [&]() -> std::tuple<size_t, size_t> {
-      if constexpr (regionIter) {
-        // We extend the search box for cells here since particles might have moved
-        return {_cellBlock.get1DIndexOfPosition(boxMinWithSafetyMargin),
-                _cellBlock.get1DIndexOfPosition(boxMaxWithSafetyMargin)};
-      } else {
-        if (not(iteratorBehavior & IteratorBehavior::halo)) {
-          // only potentially owned region
-          return {_cellBlock.getFirstOwnedCellIndex(), _cellBlock.getLastOwnedCellIndex()};
-        } else {
-          // whole range of cells
-          return {0, this->_cells.size() - 1};
-        }
-      }
-    }();
-
-    // if we are at the start of an iteration ...
-    if (cellIndex == 0 and particleIndex == 0) {
-      cellIndex =
-          startCellIndex + ((iteratorBehavior & IteratorBehavior::forceSequential) ? 0 : autopas_get_thread_num());
-    }
-    // abort if the start index is already out of bounds
-    if (cellIndex >= this->_cells.size()) {
-      return {nullptr, 0, 0};
-    }
-    // check the data behind the indices
-    if (particleIndex >= this->_cells[cellIndex].size() or
-        not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
-            this->_cells[cellIndex][particleIndex], iteratorBehavior, boxMin, boxMax)) {
-      // either advance them to something interesting or invalidate them.
-      std::tie(cellIndex, particleIndex) =
-          advanceIteratorIndices<regionIter>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax,
-                                             boxMinWithSafetyMargin, boxMaxWithSafetyMargin, endCellIndex);
-    }
-
-    // shortcut if the given index doesn't exist
-    if (cellIndex > endCellIndex) {
-      return {nullptr, 0, 0};
-    }
-    const Particle_T *retPtr = &this->_cells[cellIndex][particleIndex];
-
-    return {retPtr, cellIndex, particleIndex};
+    return _cellBlock.template getNextParticle<regionIter>(
+        cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax, this->getVerletSkin(), [&](const Particle_T &p) {
+          return containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(p, iteratorBehavior, boxMin,
+                                                                                          boxMax);
+        });
   }
 
   /**
@@ -493,71 +445,6 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
   std::vector<ParticleCellType> &getCells() { return this->_cells; }
 
  protected:
-  /**
-   * Given a pair of cell-/particleIndex and iterator restrictions either returns the next indices that match these
-   * restrictions or indices that are out of bounds (e.g. cellIndex >= cells.size())
-   * @tparam regionIter
-   * @param cellIndex
-   * @param particleIndex
-   * @param iteratorBehavior
-   * @param boxMin The actual search box min
-   * @param boxMax The actual search box max
-   * @param boxMinWithSafetyMargin Search box min that includes a surrounding of skin
-   * @param boxMaxWithSafetyMargin Search box max that includes a surrounding of skin
-   * @param endCellIndex Last relevant cell index
-   * @return tuple<cellIndex, particleIndex>
-   */
-  template <bool regionIter>
-  std::tuple<size_t, size_t> advanceIteratorIndices(
-      size_t cellIndex, size_t particleIndex, IteratorBehavior iteratorBehavior, const std::array<double, 3> &boxMin,
-      const std::array<double, 3> &boxMax, std::array<double, 3> boxMinWithSafetyMargin,
-      std::array<double, 3> boxMaxWithSafetyMargin, size_t endCellIndex) const {
-    // Finding the indices for the next particle
-    const size_t stride = (iteratorBehavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads();
-
-    // helper function to determine if the cell can even contain particles of interest to the iterator
-    auto cellIsRelevant = [&]() -> bool {
-      bool isRelevant =
-          // behavior matches possible particle ownership
-          (iteratorBehavior & IteratorBehavior::owned and _cellBlock.cellCanContainOwnedParticles(cellIndex)) or
-          (iteratorBehavior & IteratorBehavior::halo and _cellBlock.cellCanContainHaloParticles(cellIndex));
-      if constexpr (regionIter) {
-        // short circuit if already false
-        if (isRelevant) {
-          // is the cell in the region?
-          const auto [cellLowCorner, cellHighCorner] = _cellBlock.getCellBoundingBox(cellIndex);
-          isRelevant =
-              utils::boxesOverlap(cellLowCorner, cellHighCorner, boxMinWithSafetyMargin, boxMaxWithSafetyMargin);
-        }
-      }
-      return isRelevant;
-    };
-
-    do {
-      // advance to the next particle
-      ++particleIndex;
-      // If this breaches the end of a cell, find the next non-empty cell and reset particleIndex.
-
-      // If cell has wrong type, or there are no more particles in this cell jump to the next
-      while (not cellIsRelevant() or particleIndex >= this->_cells[cellIndex].size()) {
-        // TODO: can this jump be done more efficient if behavior is only halo or owned?
-        // TODO: can this jump be done more efficient for region iters if the cell is outside the region?
-        cellIndex += stride;
-        particleIndex = 0;
-
-        // If we notice that there is nothing else to look at set invalid values, so we get a nullptr next time and
-        // break.
-        if (cellIndex > endCellIndex) {
-          return {std::numeric_limits<decltype(cellIndex)>::max(), std::numeric_limits<decltype(particleIndex)>::max()};
-        }
-      }
-    } while (not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
-        this->_cells[cellIndex][particleIndex], iteratorBehavior, boxMin, boxMax));
-
-    // the indices returned at this point should always be valid
-    return {cellIndex, particleIndex};
-  }
-
   /**
    * Checks if a given traversal is allowed for LinkedCells and sets it up for the force interactions.
    * @tparam Traversal Traversal type. E.g. pairwise, triwise
