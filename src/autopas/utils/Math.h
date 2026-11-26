@@ -7,8 +7,14 @@
 #pragma once
 
 #include <Eigen/Core>
+#include <algorithm>
 #include <cmath>
+#include <concepts>
+#include <stdexcept>
+#include <utility>
 #include <vector>
+
+#include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas::utils::Math {
 /**
@@ -216,6 +222,48 @@ double normalCDF(double x);
  * @return S(x)
  */
 double sigmoid(double x);
+
+/**
+ * Finds the least squares solution for a linear regression problem.
+ * @tparam T The type of the input data points. Must be convertible to double.
+ * @param x The x values of the data points.
+ * @param y The y values of the data points.
+ * @return A pair containing the {y-intercept, slope} of the best-fit line. Throws an exception if fewer than 2 points
+ * are available or all x are identical
+ */
+template <class T>
+requires std::convertible_to<T, double>
+[[nodiscard]] inline std::pair<double, double> simpleLeastSquares(const std::vector<T> &x, const std::vector<T> &y) {
+  if (x.size() != y.size()) {
+    throw autopas::utils::ExceptionHandler::AutoPasException("Vectors x and y must have the same size.");
+  }
+  const std::size_t n = std::min(x.size(), y.size());
+  if (n < 2) {
+    throw autopas::utils::ExceptionHandler::AutoPasException("Finding least squares fit requires at least 2 points");
+  }
+
+  // Welford-style running means for numerical stability.
+  double meanX = 0.0, meanY = 0.0;
+  double sxx = 0.0, sxy = 0.0;
+  for (std::size_t i = 0; i < n; ++i) {
+    const double xi = static_cast<double>(x[i]);
+    const double yi = static_cast<double>(y[i]);
+    const double dx = xi - meanX;
+    const double dy = yi - meanY;
+    meanX += dx / static_cast<double>(i + 1);
+    meanY += dy / static_cast<double>(i + 1);
+    sxy += dx * (yi - meanY);
+    sxx += dx * (xi - meanX);
+  }
+
+  if (sxx == 0.0) {
+    throw autopas::utils::ExceptionHandler::AutoPasException(
+        "A least square fit is not possible as all x values are identical.");
+  }
+
+  const double slope = sxy / sxx;
+  return {meanY - slope * meanX, slope};
+}
 
 /**
  * This default relative EPSILON used for the {@link isNearRel} function.

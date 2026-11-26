@@ -27,6 +27,7 @@
 #include "autopas/tuning/selectors/ContainerSelectorInfo.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/utils/ArrayUtils.h"
+#include "autopas/utils/DynamicRebuildDecisionWithFPB/RebuildDecisionContext.h"
 #include "autopas/utils/NumParticlesEstimator.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/Timer.h"
@@ -74,9 +75,13 @@ class LogicHandler {
         _verletClusterSize(logicHandlerInfo.verletClusterSize),
         _aosSortingThresholdFallback(aosSortingThresholdFallback),
         _soaSortingThresholdFallback(soaSortingThresholdFallback),
+#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
+        _usingDynamicRebuildingWithFPB{true},
+#endif
         _iterationLogger(outputSuffix,
                          std::any_of(tunerManager->getAutoTuners().begin(), tunerManager->getAutoTuners().end(),
-                                     [](const auto &tuner) { return tuner.second->canMeasureEnergy(); })),
+                                     [](const auto &tuner) { return tuner.second->canMeasureEnergy(); }),
+                         _usingDynamicRebuildingWithFPB),
         _flopLogger(outputSuffix),
         _liveInfoLogger(outputSuffix) {
     using namespace autopas::utils::ArrayMath::literals;
@@ -100,6 +105,11 @@ class LogicHandler {
     const auto interactionLengthInv = 1. / interactionLength;
     const auto boxLengthWithHalo = logicHandlerInfo.boxMax - logicHandlerInfo.boxMin + (2 * interactionLength);
     initSpatialLocks(boxLengthWithHalo, interactionLengthInv);
+#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
+    AutoPasLog(WARN,
+               "The rebuildFrequency value {} is ignored when using dynamic rebuilding with fast particles buffer.",
+               rebuildFrequency);
+#endif
   }
 
   /**
@@ -167,10 +177,58 @@ class LogicHandler {
    * @copydoc AutoPas::updateContainer()
    */
   std::vector<Particle_T> updateContainer() {
+#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
+    if (_totalRemainderTraversalTimeCurrentIter > 0) {
+      _rebuildDecisionContext.afterRemainderTraversal(_totalRemainderTraversalTimeCurrentIter,
+                                                      getNumberOfParticlesBuffer());
+      _totalRemainderTraversalTimeCurrentIter = 0;
+    }
+#endif
     ++_iteration;
 
-#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+    // For standard LAMMPS-like dynamic rebuilding, we check first if a particle has moved more than half the skin
+    // distance and if so, we set the dynamic rebuild flag to true.
+    // For static rebuilding and as well as dynamic rebuilding with fast particles buffer, this call does nothing.
     this->checkNeighborListsInvalidDoDynamicRebuild();
+
+    bool doDataStructureUpdate = not neighborListsAreValid();
+
+#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
+    /*
+     * doDataStructureUpdate already checked whether a rebuild will already be triggered for reasons other than
+     * particle buffer fullness (e.g. tuning rebuild, first iteration, etc.).
+     */
+    if (not doDataStructureUpdate) {
+      /**
+       * When using reflective boundaries, fast-moving particles in the buffer can leave the box unnoticed.
+       * This is handled in MD-Flexible by throwing an error when the leaving particles cannot be reinserted.
+       */
+      this->addFastParticlesToParticleBuffer();
+
+      long const currentNumParticlesBuffer = getNumberOfParticlesBuffer();
+      /**
+       * The number of particles in the buffer has to be estimated because the rebuild
+       * decision must be taken before the containers are updated.
+       * Additional particles (to fast particles) may enter the buffer due to MPI communication or
+       * periodic boundary conditions.
+       */
+      _rebuildDecisionContext.updateNumParticlesBufferEstimate(currentNumParticlesBuffer);
+
+      /*
+       * If the buffer is empty, no data points are available for the estimators.
+       * In this case, no prediction can be made and therefore no rebuild decision
+       * based on buffer fullness is possible, even if the estimated particle count
+       * would be non-zero.
+       */
+      if (currentNumParticlesBuffer > 0) {
+        _doDynamicRebuild = _rebuildDecisionContext.decideToRebuildOnParticleBufferFullness(_stepsSinceLastListRebuild);
+        doDataStructureUpdate = not neighborListsAreValid();
+      }
+    } else {
+      // Required to compute the particle buffer increase of the current iteration
+      _rebuildDecisionContext.updateNumParticlesBufferEstimate(getNumberOfParticlesBuffer());
+    }
+#endif
 
     if (_tuningManager->isStartOfTuningPhase(_iteration)) {
       _numRebuildsInNonTuningPhase = 0;
@@ -194,8 +252,6 @@ class LogicHandler {
       // buffer interactions.
       _tuningManager->setRebuildFrequency(std::min(userProvidedRF, rebuildFrequencyEstimate));
     }
-#endif
-    bool doDataStructureUpdate = not neighborListsAreValid();
 
     if (_tuningManager->tuningPhaseJustFinished()) {
       _iterationAfterLastTuningPhase = _iteration;
@@ -568,6 +624,21 @@ class LogicHandler {
   [[nodiscard]] unsigned long getNumberOfParticlesHalo() const { return _numParticlesHalo; }
 
   /**
+   * Get the total number of particles (owned+halo) in the buffer.
+   * @return
+   */
+  [[nodiscard]] unsigned long getNumberOfParticlesBuffer() const {
+    size_t particleBufferSize = 0;
+    for (auto &cell : _particleBuffer) {
+      particleBufferSize += cell.size();
+    }
+    for (auto &cell : _haloParticleBuffer) {
+      particleBufferSize += cell.size();
+    }
+    return particleBufferSize;
+  }
+
+  /**
    * Checks if the given configuration can be used with the given functor and the current state of the simulation.
    * For this, the container and traversal need to be instantiated, hence if the configuration is applicable, it sets
    * the current container and returns the traversal.
@@ -645,7 +716,8 @@ class LogicHandler {
   }
 
   /**
-   * Estimates the rebuild frequency based on the current maximum velocity in the container
+   * Estimates the rebuild frequency based on the current maximum velocity in the container.
+   * This doesn't include the buffer particles as they do not trigger rebuild of the neighbor lists.
    * Using the formula rf = skin/deltaT/vmax/2
    * @param skin is the skin length used in the simulation
    * @param deltaT is the time step
@@ -665,31 +737,39 @@ class LogicHandler {
     // return the rebuild frequency estimate
     return skin / maxVelocity / deltaT / 2;
   }
+
   /**
-   * getter function for _neighborListInvalidDoDynamicRebuild
-   * @return bool stored in _neighborListInvalidDoDynamicRebuild
+   * Adds fast particle to the particle buffer if it has moved more than skin/2 when using dynamic rebuilding with fast
+   * particles buffer (FPB). Does nothing otherwise.
    */
-  bool getNeighborListsInvalidDoDynamicRebuild();
+  void addFastParticlesToParticleBuffer();
 
   /**
    * Checks if any particle has moved more than skin/2.
-   * updates bool: _neighborListInvalidDoDynamicRebuild
+   * If so, sets _doDynamicRebuild to true.
    */
   void checkNeighborListsInvalidDoDynamicRebuild();
 
   /**
-   * Checks if any particle has moved more than skin/2.
-   * resets bool: _neighborListInvalidDoDynamicRebuild to false
+   * getter function for testing
+   * @return _doDynamicRebuild
    */
-  void resetNeighborListsInvalidDoDynamicRebuild();
+  [[nodiscard]] bool getDoDynamicRebuild() const;
+
+  /**
+   * getter function for testing
+   * @return _rebuildDecisionContext.getNumParticlesBufferEstimate()
+   */
+  [[nodiscard]] size_t getNumParticlesBufferEstimate() const;
 
   /**
    * Checks if in the next iteration the neighbor lists have to be rebuilt.
    *
-   * This can be the case either because we hit the rebuild frequency or the dynamic rebuild criteria or because the
-   * auto tuner tests a new configuration.
+   * This can be the case either because we hit the rebuild frequency or the dynamic rebuild criteria (when dynamic
+   * rebuilding is turned ON) or because the auto tuner tests a new configuration. Dynamic rebuilding with the fast
+   * particles buffer (FPB) ignores the rebuild frequency.
    *
-   * @return True iff the neighbor lists will not be rebuild.
+   * @return True iff the neighbor lists will not be rebuilt.
    */
   bool neighborListsAreValid();
 
@@ -898,6 +978,28 @@ class LogicHandler {
   size_t _iteration{std::numeric_limits<size_t>::max()};
 
   /**
+   * Specifies if we are currently using dynamic rebuilding with fast particles buffer (FPB).
+   */
+  std::atomic<bool> _usingDynamicRebuildingWithFPB{false};
+
+  /**
+   * The current amount of fast particles
+   */
+  size_t _numParticlesFast{0};
+
+  /**
+   * The total time spent in the remainder traversal for the current iteration over multiple computeInteraction calls.
+   */
+  size_t _totalRemainderTraversalTimeCurrentIter{0};
+
+  /**
+   * Aggregates all data required to decide whether a neighbor list rebuild
+   * should be triggered based on estimated remainder traversal and rebuild times when using dynamic rebuild with fast
+   * particles buffer (FPB).
+   */
+  utils::DynamicRebuildDecisionWithFPB::RebuildDecisionContext _rebuildDecisionContext{};
+
+  /**
    * The iteration number after the last tuning phase has ended.
    */
   size_t _iterationAfterLastTuningPhase{0};
@@ -935,10 +1037,15 @@ class LogicHandler {
   IterationLogger _iterationLogger;
 
   /**
-   * Tells if dynamic rebuild is necessary currently
-   * neighborListInvalidDoDynamicRebuild - true if a particle has moved more than skin/2
+   * Indicates whether a dynamic rebuild should be performed.
+   *
+   * In case of standard dynamic rebuilding, doDynamicRebuild is set to true when any particle in the container has
+   * moved more than the half skin distance. In case of dynamic rebuilding with fast particles buffer (FPB),
+   * doDynamicRebuild is set to true if the particle buffer is sufficiently full such that performing a rebuild is more
+   * advantageous than executing another remainder traversal. Does nothing for static rebuilding, should always remain
+   * false.
    */
-  bool _neighborListInvalidDoDynamicRebuild{false};
+  bool _doDynamicRebuild{false};
 
   /**
    * updating position at rebuild for every particle
@@ -959,11 +1066,9 @@ class LogicHandler {
 template <typename Particle_T>
 void LogicHandler<Particle_T>::updateRebuildPositions() {
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-  // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
-  // e.g. neighbor list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
-  // require a rebuild of neighbor lists.
+  // All the owned particles need to be reset as even buffer particles will be added to the container during rebuilding.
   AUTOPAS_OPENMP(parallel)
-  for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
+  for (auto iter = this->begin(IteratorBehavior::ownedOrHalo); iter.isValid(); ++iter) {
     iter->resetRAtRebuild();
   }
 #endif
@@ -984,17 +1089,36 @@ void LogicHandler<Particle_T>::checkMinimalSize() const {
 }
 
 template <typename Particle_T>
-bool LogicHandler<Particle_T>::getNeighborListsInvalidDoDynamicRebuild() {
-  return _neighborListInvalidDoDynamicRebuild;
+bool LogicHandler<Particle_T>::getDoDynamicRebuild() const {
+  return _doDynamicRebuild;
+}
+
+template <typename Particle_T>
+size_t LogicHandler<Particle_T>::getNumParticlesBufferEstimate() const {
+#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
+  return _rebuildDecisionContext.getNumParticlesBufferEstimate();
+#endif
+  return 0;
 }
 
 template <typename Particle_T>
 bool LogicHandler<Particle_T>::neighborListsAreValid() {
-  if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency
-#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-      or getNeighborListsInvalidDoDynamicRebuild()
+  auto tunersTriggerRebuild = _tuningManager->requiresRebuilding(_iteration);
+
+#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
+  if (tunersTriggerRebuild) {
+    // Since tuners trigger a rebuild, we expect a configuration change.
+    _rebuildDecisionContext.afterConfigurationChange();
+  }
 #endif
-      or _tuningManager->requiresRebuilding(_iteration)) {
+
+  if (_doDynamicRebuild or
+#ifndef AUTOPAS_DYNAMIC_CONTAINERS_FPB
+      // Fixed-interval rebuild of the neighbor list; FPB rebuilds on demand instead.
+      // Standard dynamic rebuilding still makes use of this to avoid excessive buffer filling.
+      (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency) or
+#endif
+      tunersTriggerRebuild) {
     _neighborListsAreValid.store(false, std::memory_order_relaxed);
   }
 
@@ -1002,27 +1126,82 @@ bool LogicHandler<Particle_T>::neighborListsAreValid() {
 }
 
 template <typename Particle_T>
-void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
-#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+void LogicHandler<Particle_T>::addFastParticlesToParticleBuffer() {
+#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
   const auto skin = getContainer().getVerletSkin();
-  // (skin/2)^2
   const auto halfSkinSquare = skin * skin * 0.25;
-  // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
+  auto stepsSinceLastRebuildPrevIter = std::max(_stepsSinceLastListRebuild - 1, static_cast<size_t>(1));
+  const auto haloFactor = 1.05 * _stepsSinceLastListRebuild * _stepsSinceLastListRebuild /
+                          stepsSinceLastRebuildPrevIter / stepsSinceLastRebuildPrevIter;
+
+  // The particles in buffer are ignored because they do not rely on the structure of the particle containers,
   // e.g. neighbor list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
   // require a rebuild of neighbor lists.
-  AUTOPAS_OPENMP(parallel reduction(or : _neighborListInvalidDoDynamicRebuild))
-  for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
+  AUTOPAS_OPENMP(parallel reduction(+ : _numParticlesFast))
+  for (auto iter = this->begin(IteratorBehavior::ownedOrHalo | IteratorBehavior::containerOnly); iter.isValid();
+       ++iter) {
     const auto distance = iter->calculateDisplacementSinceRebuild();
     const double distanceSquare = utils::ArrayMath::dot(distance, distance);
-
-    _neighborListInvalidDoDynamicRebuild |= distanceSquare >= halfSkinSquare;
+    Particle_T &particle = *iter;
+    Particle_T particleCopy = particle;
+    // Position of owned particles is already updated at the time of updateContainer() call. Hence, all the particles
+    // that have moved farther than halfSkin distance are moved the fast particle buffer (instead of triggering rebuild
+    // as in the standard dynamic rebuilding.)
+    if (particle.isOwned() and distanceSquare >= halfSkinSquare) {
+      _particleBuffer[autopas_get_thread_num()].addParticle(particleCopy);
+      internal::markParticleAsDeleted(particle);
+      _numParticlesFast++;
+    }
+    // Halo particles can move more than halfskin when corresponding ownded particle in the neighboring local domain
+    // has done so. They can move into the cutoff distance of another particle but will be silently ignored as they
+    // are not a part of the neighbor list that is constructed only during rebuild iterations. They are also not added
+    // to the buffer and hence not handled by remainder traversal. To avoid this, halo particle's ID is changed to max
+    // and deleted, so that it is not found when updateHaloParticle() is called and is forced into the buffer. Halo
+    // particles are not added to buffer here as they will be removed later in the updateContainer() and added again
+    // when exchanging halos from neighbouring rank before computeInteraction() call.
+    if (particle.isHalo() and (haloFactor * distanceSquare >= halfSkinSquare)) {
+      particle.setID(std::numeric_limits<unsigned int>::max());
+      internal::markParticleAsDeleted(particle);
+      _numParticlesFast++;
+    }
   }
 #endif
 }
 
 template <typename Particle_T>
-void LogicHandler<Particle_T>::resetNeighborListsInvalidDoDynamicRebuild() {
-  _neighborListInvalidDoDynamicRebuild = false;
+void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
+#ifdef AUTOPAS_DYNAMIC_CONTAINERS_STANDARD
+  const auto skin = getContainer().getVerletSkin();
+  // (skin/2)^2
+  const auto halfSkinSquare = skin * skin * 0.25;
+  auto stepsSinceLastRebuildPrevIter = std::max(_stepsSinceLastListRebuild - 1, static_cast<size_t>(1));
+  const auto haloFactor = 1.05 * _stepsSinceLastListRebuild * _stepsSinceLastListRebuild /
+                          stepsSinceLastRebuildPrevIter / stepsSinceLastRebuildPrevIter;
+  // The particles in buffer are ignored because they do not rely on the structure of the particle containers,
+  // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer
+  // doesn't require a rebuild of neighbor lists.
+  AUTOPAS_OPENMP(parallel reduction(or : _doDynamicRebuild))
+  for (auto iter = this->begin(IteratorBehavior::ownedOrHalo | IteratorBehavior::containerOnly); iter.isValid();
+       ++iter) {
+    const auto distance = iter->calculateDisplacementSinceRebuild();
+    const double distanceSquare = utils::ArrayMath::dot(distance, distance);
+    Particle_T &particle = *iter;
+    if (particle.isOwned() and distanceSquare >= halfSkinSquare) {
+      _doDynamicRebuild |= true;
+    }
+    // Halo particles can move more than halfskin when corresponding ownded particle in the neighboring local domain
+    // has done so. They can move into the cutoff distance of another particle but will be silently ignored as they
+    // are not a part of the neighbor list that is constructed only during rebuild iterations. They are also not added
+    // to the buffer and hence not handled by remainder traversal. To avoid this, halo particle's ID is changed to max
+    // and deleted, so that it is not found when updateHaloParticle() is called and is forced into the buffer. Halo
+    // particles are not added to buffer here as they will be removed later in the updateContainer() and added again
+    // when exchanging halos from neighbouring rank before computeInteraction() call.
+    if (particle.isHalo() and (haloFactor * distanceSquare >= halfSkinSquare)) {
+      particle.setID(std::numeric_limits<unsigned int>::max());
+      internal::markParticleAsDeleted(particle);
+    }
+  }
+#endif
 }
 
 template <typename Particle_T>
@@ -1097,17 +1276,19 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   functor.initTraversal();
 
   // if lists are not valid -> rebuild;
-  if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
-#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+  const bool doRebuild = not _neighborListsAreValid.load(std::memory_order_relaxed);
+
+  if (doRebuild) {
     this->updateRebuildPositions();
-#endif
     _currentContainer->rebuildNeighborLists(&traversal);
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-    this->resetNeighborListsInvalidDoDynamicRebuild();
     _numRebuilds++;
     if (not autoTuner.inTuningPhase()) {
       _numRebuildsInNonTuningPhase++;
     }
+#ifdef AUTOPAS_DYNAMIC_CONTAINERS_STANDARD
+    _doDynamicRebuild = false;
+#endif
 #endif
     _neighborListsAreValid.store(true, std::memory_order_relaxed);
   }
@@ -1124,6 +1305,25 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
     functor.initializeNeighborList(this->begin(IteratorBehavior::ownedOrHalo));
   }
 
+  // for logging in current iteration
+  size_t numParticlesBuffer;
+  bool doDynamicRebuild{false};
+  double predRebuild, predRemainder;
+
+#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
+  // storing values to be logged from the current iteration
+  numParticlesBuffer = getNumberOfParticlesBuffer();
+  doDynamicRebuild = _doDynamicRebuild;
+  predRebuild = _rebuildDecisionContext.getRebuildNeighborTimeEstimate();
+  predRemainder = _rebuildDecisionContext.getRemainderTraversalTimeEstimate();
+
+  // resetting variables after current rebuild before next iteration
+  if (doRebuild) {
+    _rebuildDecisionContext.afterRebuild(timerRebuild.getTotalTime());
+    _numParticlesFast = 0;
+    _doDynamicRebuild = false;
+  }
+#endif
   timerComputeInteractions.start();
   _currentContainer->computeInteractions(&traversal);
   timerComputeInteractions.stop();
@@ -1133,6 +1333,12 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   const auto dataLayout = autoTuner.getCurrentConfig().dataLayout;
   computeRemainderInteractions(functor, newton3, dataLayout);
   timerComputeRemainder.stop();
+
+#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
+  if (not doRebuild) {
+    _totalRemainderTraversalTimeCurrentIter += timerComputeRemainder.getTotalTime();
+  }
+#endif
 
   functor.endTraversal(newton3);
 
@@ -1152,7 +1358,15 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
           energyMeasurementsPossible ? energyTotalRebuild : nanL,
           energyMeasurementsPossible ? energyTotal - energyTotalRebuild
                                      : nanL,  // ComputeInteractions + Remainder Traversal energy consumption
-          energyMeasurementsPossible ? energyTotal : nanL};
+          energyMeasurementsPossible ? energyTotal : nanL,
+          _usingDynamicRebuildingWithFPB ? numParticlesBuffer : nanL,
+          _usingDynamicRebuildingWithFPB ? getNumberOfParticlesOwned() : nanL,
+          _usingDynamicRebuildingWithFPB ? getNumberOfParticlesHalo() : nanL,
+          _usingDynamicRebuildingWithFPB ? _numParticlesFast : nanL,
+          _usingDynamicRebuildingWithFPB ? _rebuildDecisionContext.getNumParticlesBufferEstimate() : nanL,
+          _usingDynamicRebuildingWithFPB ? predRemainder : nanD,
+          _usingDynamicRebuildingWithFPB ? predRebuild : nanD,
+          doDynamicRebuild};
 }
 
 template <typename Particle_T>
@@ -1276,7 +1490,8 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
                                                            const InteractionTypeOption &interactionType) {
   if (not _interactionTypes.contains(interactionType)) {
     utils::ExceptionHandler::exception(
-        "LogicHandler::computeInteractionsPipeline(): AutPas was not initialized for the Functor's interactions type: "
+        "LogicHandler::computeInteractionsPipeline(): AutPas was not initialized for the Functor's interactions "
+        "type: "
         "{}.",
         interactionType);
   }
@@ -1352,7 +1567,7 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
                measurements.energyJoules, measurements.energyDeltaT);
   }
   _iterationLogger.logIteration(configuration, _iteration, functor->getName(), stillTuning, tuningTimer.getTotalTime(),
-                                measurements);
+                                measurements, _usingDynamicRebuildingWithFPB);
 
   _flopLogger.logIteration(_iteration, functor->getNumFLOPs(), functor->getHitRate());
 
@@ -1388,11 +1603,11 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
     const Configuration &config, Functor &functor) {
   // Check if the configuration is compatible, independent of domain or functor
   if (not config.hasCompatibleValues()) {
-    AutoPasLog(
-        WARN,
-        "A configuration was rejected by LogicHandler::isConfigurationApplicable, as it was incompatible"
-        " independently of domain or functor. This should not occur and implies illegal configurations are being added"
-        " to the configuration queue during simulation (potentially by a tuning strategy).");
+    AutoPasLog(WARN,
+               "A configuration was rejected by LogicHandler::isConfigurationApplicable, as it was incompatible"
+               " independently of domain or functor. This should not occur and implies illegal configurations are "
+               "being added"
+               " to the configuration queue during simulation (potentially by a tuning strategy).");
     AutoPasLog(WARN, "Configuration rejected: {}", config.toString());
     // Such illegal configurations should be filtered out in the generation of the search space.
     return {nullptr, /*rejectIndefinitely*/ true};
@@ -1405,8 +1620,8 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
     return {nullptr, /*rejectIndefinitely*/ true};
   }
 
-  // Check if the VectorizationPattern is supported by the functor. Only SoA configurations use a vectorization pattern;
-  // AoS configurations always use the not-applicable (N/A) pattern, which every functor supports.
+  // Check if the VectorizationPattern is supported by the functor. Only SoA configurations use a vectorization
+  // pattern; AoS configurations always use the not-applicable (N/A) pattern, which every functor supports.
   if (config.dataLayout == DataLayoutOption::soa and not functor.isVecPatternAllowed(config.vecPattern)) {
     AutoPasLog(DEBUG, "Configuration rejected: The functor doesn't support the SoA Vectorization Pattern {}!",
                config.vecPattern);
