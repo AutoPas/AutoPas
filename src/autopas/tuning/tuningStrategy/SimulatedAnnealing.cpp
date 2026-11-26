@@ -215,16 +215,16 @@ bool autopas::SimulatedAnnealing::optimizeSuggestions(std::vector<Configuration>
       3.0 * std::log(_currentTemperature / _endTemperature) / std::log(_initialTemperature / _endTemperature), 0.0,
       3.0);
 
-  // Calculate probabilites of change happening on a given level.
-  std::vector<double> levelProbabilites(4);
+  // Calculate probabilities of change happening on a given level.
+  std::vector<double> levelProbabilities(4);
   bool candidatesExist = false;
-  for (size_t levelIndex = 0; levelIndex < levelProbabilites.size(); levelIndex++) {
+  for (size_t levelIndex = 0; levelIndex < levelProbabilities.size(); levelIndex++) {
     // If there exists no possible candidate at level i, set the probability to 0.
     // If one exists, compute the probability as a normal distribution centered at the levelIndex.
     if (configsOrderedByLevel.at(levelIndex).empty()) {
-      levelProbabilites.at(levelIndex) = 0.0;
+      levelProbabilities.at(levelIndex) = 0.0;
     } else {
-      levelProbabilites.at(levelIndex) = std::exp(
+      levelProbabilities.at(levelIndex) = std::exp(
           -std::pow((normalizedProgress - static_cast<double>(levelIndex)), 2.0) / (2.0 * _levelChangeVariance));
       candidatesExist = true;
     }
@@ -237,7 +237,7 @@ bool autopas::SimulatedAnnealing::optimizeSuggestions(std::vector<Configuration>
   }
 
   // Select level at which to select next proposal.
-  std::discrete_distribution<int> levelDistribution(levelProbabilites.begin(), levelProbabilites.end());
+  std::discrete_distribution<int> levelDistribution(levelProbabilities.begin(), levelProbabilities.end());
   const int selectedLevelIndex = levelDistribution(_rng);
 
   // Select differing parameter value evenly among available values. For that, we select some configurations as
@@ -295,7 +295,7 @@ bool autopas::SimulatedAnnealing::reset(size_t iteration, size_t tuningPhase, st
                                           : 1.0;
 
   if (!evidenceCollection.empty()) {
-    // If we already collected evidence, move the latest optimal configuartion to the back
+    // If we already collected evidence, move the latest optimal configuration to the back
     const auto it = std::find(configQueue.begin(), configQueue.end(),
                               std::get<0>(evidenceCollection.getLatestOptimalConfiguration()));
 

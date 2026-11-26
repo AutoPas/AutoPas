@@ -14,7 +14,7 @@
 
 namespace autopas {
 
-/// @brief Implements a stocahstic tuning strategy based on Simulated Annealing. The selection process of which
+/// @brief Implements a stochastic tuning strategy based on Simulated Annealing. The selection process of which
 /// configurations are proposed for sampling is guided by a temperature parameter. At high temperatures, the next
 /// candidate configuration may vary significantly in its parameters from the current candidate. At lower temperatures,
 /// the next candidate configuration is more likely to be similar in its parameters to the current candidate. The
