@@ -338,6 +338,8 @@ class LogicHandler {
    * @copydoc AutoPas::addParticle()
    * @tparam updateCounter If true, increments _numParticlesOwned atomically. Set to false when batch-updating counters
    * after a bulk insertion.
+   * @note When called with updateCounter=false, the number of particles MUST be updated manually afterwards by calling
+   * addToParticleCounters(numOwned, numHalos)
    */
   template <bool updateCounter = true>
   void addParticle(const Particle_T &p) {
@@ -370,6 +372,8 @@ class LogicHandler {
    * @copydoc AutoPas::addHaloParticle()
    * @tparam updateCounter If true, increments _numParticlesHalo atomically. Set to false when batch-updating counters
    * after a bulk insertion.
+   * @note When called with updateCounter=false, the number of particles MUST be updated manually afterwards by calling
+   * addToParticleCounters(numOwned, numHalos)
    */
   template <bool updateCounter = true>
   void addHaloParticle(const Particle_T &haloParticle) {

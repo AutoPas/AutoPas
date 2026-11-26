@@ -257,7 +257,7 @@ TEST_F(AutoPasTest, getNumberOfParticlesIteratorTest) {
  * and non-rebuild mode (thread-private buffers and in-place halo updates).
  */
 TEST_F(AutoPasTest, bulkAddParticlesCounterTest) {
-  auto countByIterator = [&](autopas::IteratorBehavior behavior) {
+  auto countByIterator = [&](const autopas::IteratorBehavior behavior) {
     size_t count = 0;
     for (auto iter = autoPas.begin(behavior); iter.isValid(); ++iter) {
       ++count;
@@ -265,7 +265,7 @@ TEST_F(AutoPasTest, bulkAddParticlesCounterTest) {
     return count;
   };
 
-  auto checkCounts = [&](size_t expectedOwned, size_t expectedHalo) {
+  auto checkCounts = [&](const size_t expectedOwned, const size_t expectedHalo) {
     expectedParticles(expectedOwned, expectedHalo);
     EXPECT_EQ(countByIterator(autopas::IteratorBehavior::owned), expectedOwned);
     EXPECT_EQ(countByIterator(autopas::IteratorBehavior::halo), expectedHalo);
