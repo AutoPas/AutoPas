@@ -166,8 +166,8 @@ void AutoPas<Particle_T>::reserve(size_t numParticles, size_t numHaloParticles) 
 
 template <class Particle_T>
 template <class F>
-void AutoPas<Particle_T>::addParticlesAux(size_t numParticlesToAdd, size_t numHalosToAdd, const size_t collectionSize,
-                                          F loopBody) {
+void AutoPas<Particle_T>::addParticlesAux(const size_t numParticlesToAdd, const size_t numHalosToAdd,
+                                          const size_t collectionSize, F loopBody) {
   reserve(getNumberOfParticles(IteratorBehavior::owned) + numParticlesToAdd,
           getNumberOfParticles(IteratorBehavior::halo) + numHalosToAdd);
   AUTOPAS_OPENMP(parallel for schedule(static))
@@ -186,7 +186,7 @@ template <class Particle_T>
 template <class Collection>
 void AutoPas<Particle_T>::addParticles(Collection &&particles) {
   addParticlesAux(particles.size(), 0, particles.size(),
-                  [&](auto i) { _logicHandler->template addParticle</* updateCounter */ false>(particles[i]); });
+                  [&](auto i) { _logicHandler->template addParticle</* bulkInsertion */ true>(particles[i]); });
 }
 
 template <class Particle_T>
@@ -206,7 +206,7 @@ void AutoPas<Particle_T>::addParticlesIf(Collection &&particles, F predicate) {
 
   addParticlesAux(numTrue, 0, particles.size(), [&](auto i) {
     if (predicateMask[i]) {
-      _logicHandler->template addParticle</* updateCounter */ false>(particles[i]);
+      _logicHandler->template addParticle</* bulkInsertion */ true>(particles[i]);
     }
   });
 }
@@ -244,7 +244,7 @@ template <class Particle_T>
 template <class Collection>
 void AutoPas<Particle_T>::addHaloParticles(Collection &&particles) {
   addParticlesAux(0, particles.size(), particles.size(),
-                  [&](auto i) { _logicHandler->template addHaloParticle</* updateCounter */ false>(particles[i]); });
+                  [&](auto i) { _logicHandler->template addHaloParticle</* bulkInsertion */ true>(particles[i]); });
 }
 
 template <class Particle_T>
@@ -264,7 +264,7 @@ void AutoPas<Particle_T>::addHaloParticlesIf(Collection &&particles, F predicate
 
   addParticlesAux(0, numTrue, particles.size(), [&](auto i) {
     if (predicateMask[i]) {
-      _logicHandler->template addHaloParticle</* updateCounter */ false>(particles[i]);
+      _logicHandler->template addHaloParticle</* bulkInsertion */ true>(particles[i]);
     }
   });
 }

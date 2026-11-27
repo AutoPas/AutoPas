@@ -336,12 +336,14 @@ class LogicHandler {
 
   /**
    * @copydoc AutoPas::addParticle()
-   * @tparam updateCounter If true, increments _numParticlesOwned atomically. Set to false when batch-updating counters
-   * after a bulk insertion.
-   * @note When called with updateCounter=false, the number of particles MUST be updated manually afterwards by calling
-   * addToParticleCounters(numOwned, numHalos)
+   * @tparam bulkInsertion If false (default), acquires the buffer lock if needed and increments _numParticlesOwned
+   * atomically. Set to true only during flat OpenMP bulk insertions where per-thread buffer access is exclusive and
+   * counters are batch-updated afterwards.
+   * @note When called with bulkInsertion=true, the caller MUST guarantee exclusive per-thread access to
+   * _particleBuffer[autopas_get_thread_num()] and MUST update the particle counters manually afterwards by calling
+   * addToParticleCounters(numOwned, numHalos).
    */
-  template <bool updateCounter = true>
+  template <bool bulkInsertion = false>
   void addParticle(const Particle_T &p) {
     // first check that the particle actually belongs in the container
     const auto &boxMin = _currentContainer->getBoxMin();
@@ -360,22 +362,24 @@ class LogicHandler {
       // Container has to (about to) be invalid to be able to add Particles!
       _currentContainer->template addParticle<false>(particleCopy);
     } else {
-      // If the container is valid, we add it to the thread-private particle buffer without locking.
-      _particleBuffer[autopas_get_thread_num()]._particles.push_back(particleCopy);
+      // If the container is valid, we add it to the particle buffer.
+      _particleBuffer[autopas_get_thread_num()].template addParticle</* lock */ not bulkInsertion>(particleCopy);
     }
-    if constexpr (updateCounter) {
+    if constexpr (not bulkInsertion) {
       _numParticlesOwned.fetch_add(1, std::memory_order_relaxed);
     }
   }
 
   /**
    * @copydoc AutoPas::addHaloParticle()
-   * @tparam updateCounter If true, increments _numParticlesHalo atomically. Set to false when batch-updating counters
-   * after a bulk insertion.
-   * @note When called with updateCounter=false, the number of particles MUST be updated manually afterwards by calling
-   * addToParticleCounters(numOwned, numHalos)
+   * @tparam bulkInsertion If false (default), acquires the buffer lock if needed and increments _numParticlesHalo
+   * atomically. Set to true only during flat OpenMP bulk insertions where per-thread buffer access is exclusive and
+   * counters are batch-updated afterwards.
+   * @note When called with bulkInsertion=true, the caller MUST guarantee exclusive per-thread access to
+   * _haloParticleBuffer[autopas_get_thread_num()] and MUST update the particle counters manually afterwards by calling
+   * addToParticleCounters(numOwned, numHalos).
    */
-  template <bool updateCounter = true>
+  template <bool bulkInsertion = false>
   void addHaloParticle(const Particle_T &haloParticle) {
     const auto &boxMin = _currentContainer->getBoxMin();
     const auto &boxMax = _currentContainer->getBoxMax();
@@ -396,11 +400,12 @@ class LogicHandler {
       // Check if we can update an existing halo(dummy) particle.
       bool updated = _currentContainer->updateHaloParticle(haloParticleCopy);
       if (not updated) {
-        // If we couldn't find an existing particle, add it to the thread-private halo particle buffer without locking.
-        _haloParticleBuffer[autopas_get_thread_num()]._particles.push_back(haloParticleCopy);
+        // If we couldn't find an existing particle, add it to the halo particle buffer.
+        _haloParticleBuffer[autopas_get_thread_num()].template addParticle</* lock */ not bulkInsertion>(
+            haloParticleCopy);
       }
     }
-    if constexpr (updateCounter) {
+    if constexpr (not bulkInsertion) {
       _numParticlesHalo.fetch_add(1, std::memory_order_relaxed);
     }
   }

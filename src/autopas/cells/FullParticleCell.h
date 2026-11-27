@@ -48,20 +48,23 @@ class FullParticleCell : public ParticleCell<Particle_T> {
    */
   explicit FullParticleCell(const std::array<double, 3> &cellLength) : _cellLength(cellLength) {}
 
-  void addParticle(const Particle_T &p) override {
-    std::lock_guard<AutoPasLock> guard(this->_cellLock);
+  void addParticle(const Particle_T &p) override { addParticle</* lock */ true>(p); }
 
-    // sanity check that ensures that only particles of the cells OwnershipState can be added. Note: if a cell is a
-    // dummy-cell, only dummies can be added, otherwise dummies can always be added
-    if ((not toInt64(p.getOwnershipState() & this->_ownershipState)) and
-        p.getOwnershipState() != OwnershipState::dummy) {
-      autopas::utils::ExceptionHandler::exception(
-          "FullParticleCell::addParticle() can not add a particle with OwnershipState {} to a cell with OwnershipState "
-          "{}",
-          p.getOwnershipState(), this->_ownershipState);
+  /**
+   * Adds a particle to the cell, optionally without acquiring the cell lock.
+   * Performs the same OwnershipState sanity checks as addParticle().
+   * @tparam lock If true, acquires _cellLock before inserting. Set to false only when exclusive access to this cell
+   * is guaranteed by the caller (e.g., thread-private buffers in a flat OpenMP parallel region).
+   * @param p The particle to be added.
+   */
+  template <bool lock>
+  void addParticle(const Particle_T &p) {
+    if constexpr (lock) {
+      std::lock_guard<AutoPasLock> guard(this->_cellLock);
+      addParticleImpl(p);
+    } else {
+      addParticleImpl(p);
     }
-
-    _particles.push_back(p);
   }
 
   /**
@@ -279,6 +282,20 @@ class FullParticleCell : public ParticleCell<Particle_T> {
   SoA<SoAArraysType> _particleSoABuffer{};
 
  private:
+  void addParticleImpl(const Particle_T &p) {
+    // sanity check that ensures that only particles of the cells OwnershipState can be added. Note: if a cell is a
+    // dummy-cell, only dummies can be added, otherwise dummies can always be added
+    if ((not toInt64(p.getOwnershipState() & this->_ownershipState)) and
+        p.getOwnershipState() != OwnershipState::dummy) {
+      autopas::utils::ExceptionHandler::exception(
+          "FullParticleCell::addParticle() can not add a particle with OwnershipState {} to a cell with OwnershipState "
+          "{}",
+          p.getOwnershipState(), this->_ownershipState);
+    }
+
+    _particles.push_back(p);
+  }
+
   std::array<double, 3> _cellLength;
 
   template <bool ownershipCheck, bool regionCheck, typename Lambda>

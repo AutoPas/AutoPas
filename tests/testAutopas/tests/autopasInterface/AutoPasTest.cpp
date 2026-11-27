@@ -271,7 +271,11 @@ TEST_F(AutoPasTest, bulkAddParticlesCounterTest) {
     EXPECT_EQ(countByIterator(autopas::IteratorBehavior::halo), expectedHalo);
   };
 
-  // --- Phase 1: Rebuild state (neighbor lists invalid -> direct container insertion) ---
+  // --- Phase 1: Rebuild state (iteration 0, neighbor lists invalid -> direct container insertion) ---
+  // Advance to iteration 0 before the first computeInteractions so the next updateContainer enters iteration 1
+  // (non-rebuild state with valid neighbor lists).
+  EXPECT_TRUE(autoPas.updateContainer().empty());
+
   std::vector<Molecule> ownedBatch1;
   for (size_t i = 0; i < 20; ++i) {
     ownedBatch1.emplace_back(std::array<double, 3>{1.0 + 0.2 * static_cast<double>(i), 1.0, 1.0},
@@ -305,15 +309,19 @@ TEST_F(AutoPasTest, bulkAddParticlesCounterTest) {
   // Only even IDs (5 particles) pass predicate.
   autoPas.addHaloParticlesIf(haloBatch2, [](const auto &p) { return p.getID() % 2 == 0; });
   checkCounts(27, 20);
+  EXPECT_EQ(countByIterator(autopas::IteratorBehavior::owned | autopas::IteratorBehavior::containerOnly), 27);
+  EXPECT_EQ(countByIterator(autopas::IteratorBehavior::halo | autopas::IteratorBehavior::containerOnly), 20);
 
-  // --- Phase 2: Valid neighbor-list state (non-rebuild -> thread-private buffers + updateHaloParticle) ---
+  // --- Phase 2: Valid neighbor-list state (iteration 1, non-rebuild -> buffers + updateHaloParticle) ---
   LJFunctorType<> functor{autoPas.getCutoff()};
   functor.setParticleProperties(1.0, 1.0);
   autoPas.computeInteractions(&functor);
   auto leaving = autoPas.updateContainer();
   EXPECT_TRUE(leaving.empty());
-  // updateContainer marks/deletes all halos.
+  // updateContainer marks all halos as dummy while keeping neighbor lists valid.
   checkCounts(27, 0);
+  EXPECT_EQ(countByIterator(autopas::IteratorBehavior::owned | autopas::IteratorBehavior::containerOnly), 27);
+  EXPECT_EQ(countByIterator(autopas::IteratorBehavior::halo | autopas::IteratorBehavior::containerOnly), 0);
 
   // Bulk add owned particles into thread-private _particleBuffer.
   std::vector<Molecule> ownedBufferBatch;
@@ -323,11 +331,14 @@ TEST_F(AutoPasTest, bulkAddParticlesCounterTest) {
   }
   autoPas.addParticles(ownedBufferBatch);
   checkCounts(38, 0);
+  // Container-only count must remain 27, proving the 11 new particles went into _particleBuffer.
+  EXPECT_EQ(countByIterator(autopas::IteratorBehavior::owned | autopas::IteratorBehavior::containerOnly), 27);
 
   // Bulk add halo particles: haloBatch1 updates existing halo(dummy) cells in place;
   // haloBufferBatch goes into thread-private _haloParticleBuffer.
   autoPas.addHaloParticles(haloBatch1);
   checkCounts(38, 15);
+  EXPECT_EQ(countByIterator(autopas::IteratorBehavior::halo | autopas::IteratorBehavior::containerOnly), 15);
 
   std::vector<Molecule> haloBufferBatch;
   for (size_t i = 400; i < 410; ++i) {
@@ -337,4 +348,28 @@ TEST_F(AutoPasTest, bulkAddParticlesCounterTest) {
   // Only odd IDs (5 particles) pass predicate.
   autoPas.addHaloParticlesIf(haloBufferBatch, [](const auto &p) { return p.getID() % 2 == 1; });
   checkCounts(38, 20);
+  // Container-only halo count must remain 15, proving the 5 new halos went into _haloParticleBuffer.
+  EXPECT_EQ(countByIterator(autopas::IteratorBehavior::halo | autopas::IteratorBehavior::containerOnly), 15);
+}
+
+/**
+ * Verifies that position checks remain enforced when inserting owned or halo particles in valid neighbor-list
+ * (buffered) mode.
+ */
+TEST_F(AutoPasTest, addParticlePositionCheckInBufferModeTest) {
+  // Enter iteration 1 (valid neighbor lists -> buffer mode).
+  EXPECT_TRUE(autoPas.updateContainer().empty());
+  autoPas.addParticle(Molecule({1.0, 1.0, 1.0}, {0.0, 0.0, 0.0}, 0));
+  LJFunctorType<> functor{autoPas.getCutoff()};
+  functor.setParticleProperties(1.0, 1.0);
+  autoPas.computeInteractions(&functor);
+  EXPECT_TRUE(autoPas.updateContainer().empty());
+
+  // Out-of-box owned particle must still throw in buffer mode.
+  EXPECT_ANY_THROW(autoPas.addParticle(Molecule({-0.5, 1.0, 1.0}, {0.0, 0.0, 0.0}, 1)));
+  expectedParticles(1, 0);
+
+  // In-box halo particle must still throw in buffer mode.
+  EXPECT_ANY_THROW(autoPas.addHaloParticle(Molecule({2.0, 2.0, 2.0}, {0.0, 0.0, 0.0}, 2)));
+  expectedParticles(1, 0);
 }
