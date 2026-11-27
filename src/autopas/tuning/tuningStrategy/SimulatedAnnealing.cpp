@@ -15,16 +15,6 @@
 
 #include "autopas/tuning/Configuration.h"
 
-/// @brief Constructor for the Simulated Annealing tuning strategy.
-/// @param maxEvidence Maximum number of evidence to collect.
-/// @param seed Seed for the random number generator.
-/// @param initialTemperature Dimensionless T_0 > 0 used as the initial value for the temperature.
-/// @param endTemperature  Dimensionless T_end with T_0 > T_end > 0 used as the target value for the temperature in the
-/// last comparison of a tuning phase. The temperature decreases geometrically from T_0 to T_end over the whole tuning
-/// phase.
-/// @param exclusionFactor Untested candidate configurations that have been measured in a recent tuning phase (up to 2
-/// phases back) are not tested in the current tuning phase, if the recorded measurements predict a Δ > exclusionFactor
-/// * T_current. Can be disabled with exclusionFactor = inf.
 autopas::SimulatedAnnealing::SimulatedAnnealing(size_t maxEvidence, unsigned long seed, double initialTemperature,
                                                 double endTemperature, double exclusionFactor,
                                                 double levelChangeVariance)
@@ -64,7 +54,7 @@ namespace {
 /// (rebuilding of container). The levels range from 0 (smallest) to 3 (highest) difference.
 /// @param a Configuration to compare.
 /// @param b Configuration to compare.
-/// @return Returns the highest difference level of the two configurations: 3 (container), 2 (traversal), 1 (data
+/// @return The highest difference level of the two configurations: 3 (container), 2 (traversal), 1 (data
 /// layout, newton3) or 0 (cellSizeFactor, loadEstimator, vecPattern)
 int levelDiff(const autopas::Configuration &a, const autopas::Configuration &b) {
   if (a.container != b.container) return 3;
@@ -74,7 +64,7 @@ int levelDiff(const autopas::Configuration &a, const autopas::Configuration &b) 
 }
 
 /// @brief Compares two configurations and returns whether both configurations have the same value(s) at the given
-/// difference level.
+/// difference level. Level 0 always returns true.
 /// @param a Configuration to compare.
 /// @param b Configuration to compare.
 /// @param level Difference level to compare at.
@@ -93,7 +83,7 @@ bool sameValueAtLevel(const autopas::Configuration &a, const autopas::Configurat
 /// @param level Difference level to compare up to.
 /// @return The difference heuristic between the two configurations.
 int parameterDiff(const autopas::Configuration &a, const autopas::Configuration &b, int level) {
-  // TODO: Possibly penalize differently depending on the actual parameters.
+  // @todo Possibly penalize differently depending on the actual parameters.
   int differenceCounter = 0;
 
   differenceCounter += a.cellSizeFactor != b.cellSizeFactor ? 1 : 0;
@@ -174,7 +164,7 @@ void autopas::SimulatedAnnealing::addEvidence(const Configuration &configuration
 
     _currentTemperature *= _coolingFactor;
   }
-};
+}
 
 bool autopas::SimulatedAnnealing::optimizeSuggestions(std::vector<Configuration> &configQueue,
                                                       const EvidenceCollection &evidenceCollection) {
@@ -215,16 +205,16 @@ bool autopas::SimulatedAnnealing::optimizeSuggestions(std::vector<Configuration>
       3.0 * std::log(_currentTemperature / _endTemperature) / std::log(_initialTemperature / _endTemperature), 0.0,
       3.0);
 
-  // Calculate probabilities of change happening on a given level.
-  std::vector<double> levelProbabilities(4);
+  // Calculate weights (≈ probabilities) of change happening on a given level (unnormalized).
+  std::vector<double> levelWeights(4);
   bool candidatesExist = false;
-  for (size_t levelIndex = 0; levelIndex < levelProbabilities.size(); levelIndex++) {
+  for (size_t levelIndex = 0; levelIndex < levelWeights.size(); levelIndex++) {
     // If there exists no possible candidate at level i, set the probability to 0.
     // If one exists, compute the probability as a normal distribution centered at the levelIndex.
     if (configsOrderedByLevel.at(levelIndex).empty()) {
-      levelProbabilities.at(levelIndex) = 0.0;
+      levelWeights.at(levelIndex) = 0.0;
     } else {
-      levelProbabilities.at(levelIndex) = std::exp(
+      levelWeights.at(levelIndex) = std::exp(
           -std::pow((normalizedProgress - static_cast<double>(levelIndex)), 2.0) / (2.0 * _levelChangeVariance));
       candidatesExist = true;
     }
@@ -237,14 +227,13 @@ bool autopas::SimulatedAnnealing::optimizeSuggestions(std::vector<Configuration>
   }
 
   // Select level at which to select next proposal.
-  std::discrete_distribution<int> levelDistribution(levelProbabilities.begin(), levelProbabilities.end());
+  std::discrete_distribution<int> levelDistribution(levelWeights.begin(), levelWeights.end());
   const int selectedLevelIndex = levelDistribution(_rng);
 
   // Select differing parameter value evenly among available values. For that, we select some configurations as
   // representatives for their value of the given parameter, as to not skew the random pick by e.g. containers which
   // have many traversal options.
   std::vector<Configuration> representatives;
-  // https://stackoverflow.com/a/51595291
   const auto &members = configsOrderedByLevel.at(selectedLevelIndex);
   std::copy_if(members.begin(), members.end(), std::back_inserter(representatives), [&](const auto &c) {
     return std::none_of(representatives.begin(), representatives.end(),
