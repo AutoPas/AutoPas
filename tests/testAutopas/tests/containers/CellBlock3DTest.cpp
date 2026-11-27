@@ -245,7 +245,8 @@ TEST_F(CellBlock3DTest, testGetCellBoundingBox) {
 
 /**
  * Tests whether updateHaloParticle() finds and updates matching halo particles in containing and neighboring halo
- * cells while ignoring owned cells, mismatched IDs, and particles outside allowedDistance.
+ * cells (including follow-up updates after a particle has already left its cell, at both lower and upper boundaries)
+ * while ignoring owned cells, mismatched IDs, and particles outside allowedDistance.
  */
 TEST_F(CellBlock3DTest, testUpdateHaloParticle) {
   constexpr double cellLength = 1.0;
@@ -254,7 +255,7 @@ TEST_F(CellBlock3DTest, testUpdateHaloParticle) {
   std::vector<FMCell> cells;
   autopas::internal::CellBlock3D<FMCell> cellBlock{cells, boxMin, boxMax, cellLength, 1.0};
 
-  // Case 1: Matching halo particle in its containing halo cell {0, 2, 2} is updated.
+  // Case 1 (lower boundary): Matching halo particle in its containing halo cell {0, 2, 2} is updated.
   {
     Molecule original({-0.5, 1.5, 1.5}, {0.0, 0.0, 0.0}, 1);
     original.setOwnershipState(autopas::OwnershipState::halo);
@@ -270,9 +271,10 @@ TEST_F(CellBlock3DTest, testUpdateHaloParticle) {
     cellBlock.clearHaloCells();
   }
 
-  // Case 2: Halo particle moved across a cell boundary into an adjacent halo cell within allowedDistance.
+  // Case 2 (lower boundary): Halo particle moved across a cell boundary into an adjacent halo cell within
+  // allowedDistance, and is updated a second time while already outside its stored cell.
   {
-    // Original stored in halo cell {0, 0, 1}, updated position is in adjacent halo cell {0, 1, 1}.
+    // Original stored in halo cell {0, 0, 1}, updated positions are in adjacent halo cell {0, 1, 1}.
     Molecule original({-0.05, -0.02, 0.05}, {0.0, 0.0, 0.0}, 2);
     original.setOwnershipState(autopas::OwnershipState::halo);
     cellBlock.getContainingCell(original.getR()).addParticle(original);
@@ -281,13 +283,22 @@ TEST_F(CellBlock3DTest, testUpdateHaloParticle) {
     updated.setOwnershipState(autopas::OwnershipState::halo);
     EXPECT_TRUE(cellBlock.updateHaloParticle(updated, 0.1));
 
-    const auto &stored = cellBlock.getCell({0, 0, 1})[0];
-    EXPECT_EQ(stored.getR(), updated.getR());
-    EXPECT_EQ(stored.getV(), updated.getV());
+    const auto &storedAfterFirst = cellBlock.getCell({0, 0, 1})[0];
+    EXPECT_EQ(storedAfterFirst.getR(), updated.getR());
+    EXPECT_EQ(storedAfterFirst.getV(), updated.getV());
+
+    Molecule updatedAgain({-0.05, 0.07, 0.05}, {7.0, 8.0, 9.0}, 2);
+    updatedAgain.setOwnershipState(autopas::OwnershipState::halo);
+    EXPECT_TRUE(cellBlock.updateHaloParticle(updatedAgain, 0.1));
+
+    const auto &storedAfterSecond = cellBlock.getCell({0, 0, 1})[0];
+    EXPECT_EQ(storedAfterSecond.getR(), updatedAgain.getR());
+    EXPECT_EQ(storedAfterSecond.getV(), updatedAgain.getV());
     cellBlock.clearHaloCells();
   }
 
-  // Case 3: Halo particle moved slightly into an owned cell -> still finds and updates it in the neighboring halo cell.
+  // Case 3 (lower boundary): Halo particle moved slightly into an owned cell -> still finds and updates it in the
+  // neighboring halo cell, including on a subsequent update while already inside the owned cell.
   {
     Molecule original({-0.02, 0.5, 0.5}, {0.0, 0.0, 0.0}, 3);
     original.setOwnershipState(autopas::OwnershipState::halo);
@@ -297,9 +308,17 @@ TEST_F(CellBlock3DTest, testUpdateHaloParticle) {
     updated.setOwnershipState(autopas::OwnershipState::halo);
     EXPECT_TRUE(cellBlock.updateHaloParticle(updated, 0.1));
 
-    const auto &stored = cellBlock.getCell({0, 1, 1})[0];
-    EXPECT_EQ(stored.getR(), updated.getR());
-    EXPECT_EQ(stored.getV(), updated.getV());
+    const auto &storedAfterFirst = cellBlock.getCell({0, 1, 1})[0];
+    EXPECT_EQ(storedAfterFirst.getR(), updated.getR());
+    EXPECT_EQ(storedAfterFirst.getV(), updated.getV());
+
+    Molecule updatedAgain({0.06, 0.5, 0.5}, {5.0, 6.0, 7.0}, 3);
+    updatedAgain.setOwnershipState(autopas::OwnershipState::halo);
+    EXPECT_TRUE(cellBlock.updateHaloParticle(updatedAgain, 0.1));
+
+    const auto &storedAfterSecond = cellBlock.getCell({0, 1, 1})[0];
+    EXPECT_EQ(storedAfterSecond.getR(), updatedAgain.getR());
+    EXPECT_EQ(storedAfterSecond.getV(), updatedAgain.getV());
     cellBlock.clearHaloCells();
   }
 
@@ -352,5 +371,218 @@ TEST_F(CellBlock3DTest, testUpdateHaloParticle) {
     const auto &stored = cellBlock.getCell({2, 2, 2})[0];
     EXPECT_EQ(stored.getR(), owned.getR());
     EXPECT_EQ(stored.getV(), owned.getV());
+    cellBlock.getCell({2, 2, 2}).clear();
+  }
+
+  // Case 7 (upper boundary, Case 1): Matching halo particle in its containing upper halo cell {4, 2, 2} is updated.
+  {
+    Molecule original({3.5, 1.5, 1.5}, {0.0, 0.0, 0.0}, 7);
+    original.setOwnershipState(autopas::OwnershipState::halo);
+    cellBlock.getContainingCell(original.getR()).addParticle(original);
+
+    Molecule updated({3.45, 1.5, 1.5}, {1.0, 2.0, 3.0}, 7);
+    updated.setOwnershipState(autopas::OwnershipState::halo);
+    EXPECT_TRUE(cellBlock.updateHaloParticle(updated, 0.1));
+
+    const auto &stored = cellBlock.getCell({4, 2, 2})[0];
+    EXPECT_EQ(stored.getR(), updated.getR());
+    EXPECT_EQ(stored.getV(), updated.getV());
+    cellBlock.clearHaloCells();
+  }
+
+  // Case 8 (upper boundary, Case 2): Halo particle moved into an adjacent upper halo cell and updated a second time.
+  {
+    // Original stored in upper halo cell {4, 4, 3}, updated positions are in adjacent halo cell {4, 3, 3}.
+    Molecule original({3.05, 3.02, 2.95}, {0.0, 0.0, 0.0}, 8);
+    original.setOwnershipState(autopas::OwnershipState::halo);
+    cellBlock.getContainingCell(original.getR()).addParticle(original);
+
+    Molecule updated({3.05, 2.95, 2.95}, {4.0, 5.0, 6.0}, 8);
+    updated.setOwnershipState(autopas::OwnershipState::halo);
+    EXPECT_TRUE(cellBlock.updateHaloParticle(updated, 0.1));
+
+    const auto &storedAfterFirst = cellBlock.getCell({4, 4, 3})[0];
+    EXPECT_EQ(storedAfterFirst.getR(), updated.getR());
+    EXPECT_EQ(storedAfterFirst.getV(), updated.getV());
+
+    Molecule updatedAgain({3.05, 2.93, 2.95}, {7.0, 8.0, 9.0}, 8);
+    updatedAgain.setOwnershipState(autopas::OwnershipState::halo);
+    EXPECT_TRUE(cellBlock.updateHaloParticle(updatedAgain, 0.1));
+
+    const auto &storedAfterSecond = cellBlock.getCell({4, 4, 3})[0];
+    EXPECT_EQ(storedAfterSecond.getR(), updatedAgain.getR());
+    EXPECT_EQ(storedAfterSecond.getV(), updatedAgain.getV());
+    cellBlock.clearHaloCells();
+  }
+
+  // Case 9 (upper boundary, Case 3): Upper halo particle moved into an owned cell and updated a second time.
+  {
+    // Original stored in upper halo cell {4, 3, 3}, updated positions are in owned cell {3, 3, 3}.
+    Molecule original({3.02, 2.5, 2.5}, {0.0, 0.0, 0.0}, 9);
+    original.setOwnershipState(autopas::OwnershipState::halo);
+    cellBlock.getContainingCell(original.getR()).addParticle(original);
+
+    Molecule updated({2.98, 2.5, 2.5}, {2.0, 3.0, 4.0}, 9);
+    updated.setOwnershipState(autopas::OwnershipState::halo);
+    EXPECT_TRUE(cellBlock.updateHaloParticle(updated, 0.1));
+
+    const auto &storedAfterFirst = cellBlock.getCell({4, 3, 3})[0];
+    EXPECT_EQ(storedAfterFirst.getR(), updated.getR());
+    EXPECT_EQ(storedAfterFirst.getV(), updated.getV());
+
+    Molecule updatedAgain({2.94, 2.5, 2.5}, {5.0, 6.0, 7.0}, 9);
+    updatedAgain.setOwnershipState(autopas::OwnershipState::halo);
+    EXPECT_TRUE(cellBlock.updateHaloParticle(updatedAgain, 0.1));
+
+    const auto &storedAfterSecond = cellBlock.getCell({4, 3, 3})[0];
+    EXPECT_EQ(storedAfterSecond.getR(), updatedAgain.getR());
+    EXPECT_EQ(storedAfterSecond.getV(), updatedAgain.getV());
+    cellBlock.clearHaloCells();
+  }
+}
+
+/**
+ * Tests updateHaloParticle() with cellSizeFactor = 0.5 (two halo cell layers per side) for same-cell,
+ * adjacent-halo-cell, and halo-into-owned-cell updates (with follow-up updates) at both lower and upper boundaries.
+ */
+TEST_F(CellBlock3DTest, testUpdateHaloParticleCSF05) {
+  constexpr double interactionLength = 1.0;
+  constexpr double cellSizeFactor = 0.5;
+  constexpr std::array<double, 3> boxMin = {0.0, 0.0, 0.0};
+  constexpr std::array<double, 3> boxMax = {3.0, 3.0, 3.0};
+  std::vector<FMCell> cells;
+  autopas::internal::CellBlock3D<FMCell> cellBlock{cells, boxMin, boxMax, interactionLength, cellSizeFactor};
+  ASSERT_EQ(cellBlock.getCellsPerInteractionLength(), 2ul);
+
+  // Lower boundary, Case 1: Matching halo particle in outer halo cell {0, 4, 4} is updated in place.
+  {
+    Molecule original({-0.75, 1.25, 1.25}, {0.0, 0.0, 0.0}, 1);
+    original.setOwnershipState(autopas::OwnershipState::halo);
+    cellBlock.getContainingCell(original.getR()).addParticle(original);
+
+    Molecule updated({-0.70, 1.25, 1.25}, {1.0, 2.0, 3.0}, 1);
+    updated.setOwnershipState(autopas::OwnershipState::halo);
+    EXPECT_TRUE(cellBlock.updateHaloParticle(updated, 0.1));
+
+    const auto &stored = cellBlock.getCell({0, 4, 4})[0];
+    EXPECT_EQ(stored.getR(), updated.getR());
+    EXPECT_EQ(stored.getV(), updated.getV());
+    cellBlock.clearHaloCells();
+  }
+
+  // Lower boundary, Case 2: Halo particle crosses from outer halo layer {0, 4, 4} into inner halo layer {1, 4, 4}
+  // and is updated again while already outside its stored cell.
+  {
+    Molecule original({-0.52, 1.25, 1.25}, {0.0, 0.0, 0.0}, 2);
+    original.setOwnershipState(autopas::OwnershipState::halo);
+    cellBlock.getContainingCell(original.getR()).addParticle(original);
+
+    Molecule updated({-0.48, 1.25, 1.25}, {4.0, 5.0, 6.0}, 2);
+    updated.setOwnershipState(autopas::OwnershipState::halo);
+    EXPECT_TRUE(cellBlock.updateHaloParticle(updated, 0.1));
+
+    const auto &storedAfterFirst = cellBlock.getCell({0, 4, 4})[0];
+    EXPECT_EQ(storedAfterFirst.getR(), updated.getR());
+    EXPECT_EQ(storedAfterFirst.getV(), updated.getV());
+
+    Molecule updatedAgain({-0.44, 1.25, 1.25}, {7.0, 8.0, 9.0}, 2);
+    updatedAgain.setOwnershipState(autopas::OwnershipState::halo);
+    EXPECT_TRUE(cellBlock.updateHaloParticle(updatedAgain, 0.1));
+
+    const auto &storedAfterSecond = cellBlock.getCell({0, 4, 4})[0];
+    EXPECT_EQ(storedAfterSecond.getR(), updatedAgain.getR());
+    EXPECT_EQ(storedAfterSecond.getV(), updatedAgain.getV());
+    cellBlock.clearHaloCells();
+  }
+
+  // Lower boundary, Case 3: Halo particle moves from inner halo layer {1, 2, 2} into owned cell {2, 2, 2}
+  // and is updated again while already inside the owned cell.
+  {
+    Molecule original({-0.02, 0.25, 0.25}, {0.0, 0.0, 0.0}, 3);
+    original.setOwnershipState(autopas::OwnershipState::halo);
+    cellBlock.getContainingCell(original.getR()).addParticle(original);
+
+    Molecule updated({0.02, 0.25, 0.25}, {2.0, 3.0, 4.0}, 3);
+    updated.setOwnershipState(autopas::OwnershipState::halo);
+    EXPECT_TRUE(cellBlock.updateHaloParticle(updated, 0.1));
+
+    const auto &storedAfterFirst = cellBlock.getCell({1, 2, 2})[0];
+    EXPECT_EQ(storedAfterFirst.getR(), updated.getR());
+    EXPECT_EQ(storedAfterFirst.getV(), updated.getV());
+
+    Molecule updatedAgain({0.06, 0.25, 0.25}, {5.0, 6.0, 7.0}, 3);
+    updatedAgain.setOwnershipState(autopas::OwnershipState::halo);
+    EXPECT_TRUE(cellBlock.updateHaloParticle(updatedAgain, 0.1));
+
+    const auto &storedAfterSecond = cellBlock.getCell({1, 2, 2})[0];
+    EXPECT_EQ(storedAfterSecond.getR(), updatedAgain.getR());
+    EXPECT_EQ(storedAfterSecond.getV(), updatedAgain.getV());
+    cellBlock.clearHaloCells();
+  }
+
+  // Upper boundary, Case 1: Matching halo particle in outer upper halo cell {9, 4, 4} is updated in place.
+  {
+    Molecule original({3.75, 1.25, 1.25}, {0.0, 0.0, 0.0}, 4);
+    original.setOwnershipState(autopas::OwnershipState::halo);
+    cellBlock.getContainingCell(original.getR()).addParticle(original);
+
+    Molecule updated({3.70, 1.25, 1.25}, {1.0, 2.0, 3.0}, 4);
+    updated.setOwnershipState(autopas::OwnershipState::halo);
+    EXPECT_TRUE(cellBlock.updateHaloParticle(updated, 0.1));
+
+    const auto &stored = cellBlock.getCell({9, 4, 4})[0];
+    EXPECT_EQ(stored.getR(), updated.getR());
+    EXPECT_EQ(stored.getV(), updated.getV());
+    cellBlock.clearHaloCells();
+  }
+
+  // Upper boundary, Case 2: Halo particle crosses from outer upper halo layer {9, 4, 4} into inner upper halo layer
+  // {8, 4, 4} and is updated again while already outside its stored cell.
+  {
+    Molecule original({3.52, 1.25, 1.25}, {0.0, 0.0, 0.0}, 5);
+    original.setOwnershipState(autopas::OwnershipState::halo);
+    cellBlock.getContainingCell(original.getR()).addParticle(original);
+
+    Molecule updated({3.48, 1.25, 1.25}, {4.0, 5.0, 6.0}, 5);
+    updated.setOwnershipState(autopas::OwnershipState::halo);
+    EXPECT_TRUE(cellBlock.updateHaloParticle(updated, 0.1));
+
+    const auto &storedAfterFirst = cellBlock.getCell({9, 4, 4})[0];
+    EXPECT_EQ(storedAfterFirst.getR(), updated.getR());
+    EXPECT_EQ(storedAfterFirst.getV(), updated.getV());
+
+    Molecule updatedAgain({3.44, 1.25, 1.25}, {7.0, 8.0, 9.0}, 5);
+    updatedAgain.setOwnershipState(autopas::OwnershipState::halo);
+    EXPECT_TRUE(cellBlock.updateHaloParticle(updatedAgain, 0.1));
+
+    const auto &storedAfterSecond = cellBlock.getCell({9, 4, 4})[0];
+    EXPECT_EQ(storedAfterSecond.getR(), updatedAgain.getR());
+    EXPECT_EQ(storedAfterSecond.getV(), updatedAgain.getV());
+    cellBlock.clearHaloCells();
+  }
+
+  // Upper boundary, Case 3: Halo particle moves from inner upper halo layer {8, 7, 7} into owned cell {7, 7, 7}
+  // and is updated again while already inside the owned cell.
+  {
+    Molecule original({3.02, 2.75, 2.75}, {0.0, 0.0, 0.0}, 6);
+    original.setOwnershipState(autopas::OwnershipState::halo);
+    cellBlock.getContainingCell(original.getR()).addParticle(original);
+
+    Molecule updated({2.98, 2.75, 2.75}, {2.0, 3.0, 4.0}, 6);
+    updated.setOwnershipState(autopas::OwnershipState::halo);
+    EXPECT_TRUE(cellBlock.updateHaloParticle(updated, 0.1));
+
+    const auto &storedAfterFirst = cellBlock.getCell({8, 7, 7})[0];
+    EXPECT_EQ(storedAfterFirst.getR(), updated.getR());
+    EXPECT_EQ(storedAfterFirst.getV(), updated.getV());
+
+    Molecule updatedAgain({2.94, 2.75, 2.75}, {5.0, 6.0, 7.0}, 6);
+    updatedAgain.setOwnershipState(autopas::OwnershipState::halo);
+    EXPECT_TRUE(cellBlock.updateHaloParticle(updatedAgain, 0.1));
+
+    const auto &storedAfterSecond = cellBlock.getCell({8, 7, 7})[0];
+    EXPECT_EQ(storedAfterSecond.getR(), updatedAgain.getR());
+    EXPECT_EQ(storedAfterSecond.getV(), updatedAgain.getV());
+    cellBlock.clearHaloCells();
   }
 }

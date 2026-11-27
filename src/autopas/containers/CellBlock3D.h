@@ -507,9 +507,9 @@ void CellBlock3D<ParticleCell>::clearHaloCells() {
   }
 }
 
-template <class ParticleCell>
-bool CellBlock3D<ParticleCell>::updateHaloParticle(const typename ParticleCell::ParticleType &haloParticle,
-                                                   double allowedDistance) {
+template <class ParticleCell_T>
+bool CellBlock3D<ParticleCell_T>::updateHaloParticle(const typename ParticleCell_T::ParticleType &haloParticle,
+                                                     double allowedDistance) {
   using namespace autopas::utils::ArrayMath::literals;
 
   const auto &position = haloParticle.getR();
