@@ -23,6 +23,14 @@ namespace autopas::utils::kokkos {
  * sizeof...(AttributeTypes)) in the order of AttributeNames_T, so attributes before firstStored (e.g. ptr) are not
  * stored. The conversion between attribute names and column indices happens only in this class.
  *
+ * @note This class does not manage the Kokkos::DualView sync state itself (unlike KokkosList). Callers have to uphold
+ * this protocol:
+ * 1. sync<Space>() before the first write in a space: after resize(), the device is marked modified, and
+ *    modify<Space>() aborts if the other space is modified but not synced.
+ * 2. modify<Space>() after every direct write (incl. addParticle()) and BEFORE any resize(): DualView::resize()
+ *    discards the side that is not flagged as newest, so unflagged writes are silently lost.
+ * Rule of thumb: sync → write → modify, never write → resize.
+ *
  * @tparam AttributeNames_T Enum that names the attributes, usually Particle_T::AttributeNames.
  * @tparam firstStored Attribute that is stored in the first column.
  * @tparam AttributeTypes Data types of the columns, e.g. float *.

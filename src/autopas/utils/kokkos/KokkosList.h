@@ -53,6 +53,8 @@ class KokkosList {
       }
     }
     Kokkos::abort("KokkosList::operator(): invalid data layout");
+    // Kokkos::abort is not [[noreturn]] on NVHPC, SYCL device passes, and OpenACC; unreachable otherwise.
+    return _soa.template operator()<Attribute, useDeviceView>(index);
   }
 
   /**
@@ -84,25 +86,47 @@ class KokkosList {
   }
 
   /**
-   * Marks one attribute as modified in the given space. The AoS can only be marked as a whole.
+   * Marks one attribute as modified in the given space. Delegates the operation to the currently active data layout.
+   * The AoS can only be marked as a whole, hence the attribute is ignored for AoS.
    * @tparam Space
    * @tparam Attribute
    */
   template <typename Space, typename Particle_T::AttributeNames Attribute>
   void modify() {
-    _soa.template modify<Space, Attribute>();
-    _aos.template modify<Space>();
+    switch (_activeDataLayout) {
+      case DataLayoutOption::Value::aos: {
+        _aos.template modify<Space>();
+        return;
+      }
+      case DataLayoutOption::Value::soa: {
+        _soa.template modify<Space, Attribute>();
+        return;
+      }
+    }
+    utils::ExceptionHandler::exception("KokkosList::modify(): invalid data layout {}",
+                                       static_cast<int>(_activeDataLayout));
   }
 
   /**
-   * Syncs one attribute to the given space. The AoS can only be synced as a whole.
+   * Syncs one attribute to the given space. Delegates the operation to the currently active data layout.
+   * The AoS can only be synced as a whole, hence the attribute is ignored for AoS.
    * @tparam Space
    * @tparam Attribute
    */
   template <typename Space, typename Particle_T::AttributeNames Attribute>
   void sync() {
-    _soa.template sync<Space, Attribute>();
-    _aos.template sync<Space>();
+    switch (_activeDataLayout) {
+      case DataLayoutOption::Value::aos: {
+        _aos.template sync<Space>();
+        return;
+      }
+      case DataLayoutOption::Value::soa: {
+        _soa.template sync<Space, Attribute>();
+        return;
+      }
+    }
+    utils::ExceptionHandler::exception("KokkosList::sync(): invalid data layout {}",
+                                       static_cast<int>(_activeDataLayout));
   }
 
   /**

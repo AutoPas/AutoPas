@@ -408,11 +408,15 @@ class KokkosParticleBase {
   /**
    * Const accessor used by KokkosAoS.
    * @tparam attribute Attribute name.
-   * @return Value of the requested attribute.
+   * @return Value of the requested attribute. For AttributeNames::ptr, a const pointer to this particle.
    */
   template <AttributeNames attribute>
   constexpr auto operator()() const {
-    return get<attribute>();
+    if constexpr (attribute == AttributeNames::ptr) {
+      return static_cast<const KokkosParticleBase *>(this);
+    } else {
+      return get<attribute>();
+    }
   }
 
   /**

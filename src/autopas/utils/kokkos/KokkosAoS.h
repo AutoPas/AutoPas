@@ -18,6 +18,15 @@ namespace autopas::utils::kokkos {
 
 /**
  * Kokkos version of the Array of Structure Particle Vector
+ *
+ * @note This class does not manage the Kokkos::DualView sync state itself (unlike KokkosList). Callers have to uphold
+ * this protocol:
+ * 1. sync<Space>() before the first write in a space: after resize(), the device is marked modified, and
+ *    modify<Space>() aborts if the other space is modified but not synced.
+ * 2. modify<Space>() after every direct write (incl. addParticle()) and BEFORE any resize(): DualView::resize()
+ *    discards the side that is not flagged as newest, so unflagged writes are silently lost.
+ * Rule of thumb: sync → write → modify, never write → resize.
+ *
  * @tparam Particle_T The particle type to store
  */
 template <typename Particle_T>

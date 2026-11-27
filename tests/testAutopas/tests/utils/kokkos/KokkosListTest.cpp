@@ -253,6 +253,9 @@ TEST_F(KokkosListTest, testResizeFilled) {
  * survives the resize
  */
 TEST_F(KokkosListTest, testResizeFull) {
+  // The EXPECT_THROW below requires throwing behavior, which other tests may have changed globally.
+  autopas::utils::ExceptionHandler::setBehavior(autopas::utils::ExceptionBehavior::throwException);
+
   List kokkosList{autopas::DataLayoutOption::soa, 8};
 
   addParticles(kokkosList, 0, 8);
