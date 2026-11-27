@@ -35,7 +35,10 @@ EXTRACT_ANON_NSPACES    = YES # default NO
 # HIDE_IN_BODY_DOCS     = NO # default NO
 
 # Add predefinitions if you want to define some macros (separated by space)
-# PREDEFINED              = SOME_DEFINITION
+PREDEFINED              = AUTOPAS_ENABLE_KOKKOS \
+                          KOKKOS_INLINE_FUNCTION= \
+                          KOKKOS_FUNCTION= \
+                          KOKKOS_FORCEINLINE_FUNCTION=
 
 JAVADOC_AUTOBRIEF      = YES # default NO
 QT_AUTOBRIEF           = YES # default NO
