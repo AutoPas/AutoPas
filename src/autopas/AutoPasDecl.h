@@ -197,7 +197,8 @@ class AutoPas {
   /**
    * Adds all particles from the collection to the container.
    * @note This function uses reserve().
-   * @note This function uses addParticle().
+   * @note This function delegates directly to LogicHandler::addParticle() with batched counter updates and unlocked
+   * thread-private buffer insertion, performing the same position checks as addParticle().
    * @tparam Collection Collection type that contains the particles (e.g. std::vector). Needs to support `.size()`.
    * @param particles
    */
@@ -207,7 +208,8 @@ class AutoPas {
   /**
    * Adds all particles for which predicate(particle) == true to the container.
    * @note This function uses reserve().
-   * @note This function uses addParticle().
+   * @note This function delegates directly to LogicHandler::addParticle() with batched counter updates and unlocked
+   * thread-private buffer insertion, performing the same position checks as addParticle().
    * @tparam Collection Collection type that contains the particles (e.g. std::vector). Needs to support `.size()`.
    * @tparam F Function type of predicate. Should be of the form: (const Particle_T &) -> bool.
    * @param particles Particles that are potentially added.
@@ -230,7 +232,8 @@ class AutoPas {
   /**
    * Adds all halo particles from the collection to the container.
    * @note This function uses reserve().
-   * @note This function uses addHaloParticle().
+   * @note This function delegates directly to LogicHandler::addHaloParticle() with batched counter updates and unlocked
+   * thread-private buffer insertion, performing the same position checks as addHaloParticle().
    * @tparam Collection Collection type that contains the particles (e.g. std::vector). Needs to support `.size()`.
    * @param particles
    */
@@ -240,7 +243,8 @@ class AutoPas {
   /**
    * Adds all halo particles for which predicate(particle) == true to the container.
    * @note This function uses reserve().
-   * @note This function uses addHaloParticle().
+   * @note This function delegates directly to LogicHandler::addHaloParticle() with batched counter updates and unlocked
+   * thread-private buffer insertion, performing the same position checks as addHaloParticle().
    * @tparam Collection Collection type that contains the particles (e.g. std::vector). Needs to support `.size()`.
    * @tparam F Function type of predicate. Should be of the form: (const Particle_T &) -> bool.
    * @param particles Particles that are potentially added.
@@ -1294,12 +1298,12 @@ class AutoPas {
   /**
    * Helper function to reduce code duplication for all forms of addParticle while minimizing overhead through loops.
    * Triggers reserve() and provides a parallel loop with deliberate scheduling.
-   * @tparam F Function type of loopBody: (int) -> void.
+   * @tparam F Function type of loopBody: (size_t) -> void.
    * @param numParticlesToAdd For how many new owned particles should space be allocated.
    * @param numHalosToAdd For how many new halo particles should space be allocated.
    * @param collectionSize Size of the collection from which particles are added.
    * @param loopBody Function to be called in the parallel loop over collectionSize.
-   * Typically `[&](auto i) {addParticle(collection[i]);}`.
+   * Typically, `[&](auto i) {addParticle(collection[i]);}`.
    */
   template <class F>
   void addParticlesAux(size_t numParticlesToAdd, size_t numHalosToAdd, size_t collectionSize, F loopBody);
