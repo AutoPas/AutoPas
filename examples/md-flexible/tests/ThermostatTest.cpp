@@ -158,6 +158,51 @@ TEST_F(ThermostatTest, MultiComponentTest) {
 }
 
 /**
+ * Temperature calculations must only count owned particles. A halo copy of one owned particle must not change the
+ * global or per-component temperature.
+ */
+TEST_F(ThermostatTest, TemperatureCalculationIgnoresHaloParticles) {
+  ParticleType dummyMolecule;
+  initContainer(_autopas, dummyMolecule, {2, 1, 1});
+
+  auto ownedIter = _autopas.begin(autopas::IteratorBehavior::owned);
+  ASSERT_TRUE(ownedIter.isValid());
+  ownedIter->setV({1., 0., 0.});
+
+  // Add a halo copy of the first particle, then give the second owned particle a different velocity. If the halo is
+  // included in the temperature calculation, it changes the average kinetic energy per particle.
+  ParticleType haloParticle = *ownedIter;
+  haloParticle.setR({2.5, 0.5, 0.5});
+
+  ++ownedIter;
+  ASSERT_TRUE(ownedIter.isValid());
+  ownedIter->setV({3., 0., 0.});
+
+  _autopas.addHaloParticle(haloParticle);
+
+  ASSERT_EQ(_autopas.getNumberOfParticles(autopas::IteratorBehavior::owned), 2);
+  ASSERT_EQ(_autopas.getNumberOfParticles(autopas::IteratorBehavior::halo), 1);
+
+#if MD_FLEXIBLE_MODE == MULTISITE
+  constexpr double degreesOfFreedom = 6.;
+#else
+  constexpr double degreesOfFreedom = 3.;
+#endif
+  constexpr double expectedTemperature = 10. / (2. * degreesOfFreedom);
+
+  EXPECT_NEAR(Thermostat::calcTemperature(_autopas, _particlePropertiesLibrary), expectedTemperature, 1e-12);
+  const auto componentTemperatures = Thermostat::calcTemperatureComponent(_autopas, _particlePropertiesLibrary);
+  EXPECT_NEAR(componentTemperatures.at(0), expectedTemperature, 1e-12);
+
+  // The thermostat also uses the per-component temperature to compute its scaling factor.
+  constexpr double targetTemperature = 0.5;
+  Thermostat::apply(_autopas, _particlePropertiesLibrary, targetTemperature, std::numeric_limits<double>::max());
+  EXPECT_NEAR(Thermostat::calcTemperature(_autopas, _particlePropertiesLibrary), targetTemperature, 1e-12);
+  EXPECT_NEAR(Thermostat::calcTemperatureComponent(_autopas, _particlePropertiesLibrary).at(0), targetTemperature,
+              1e-12);
+}
+
+/**
  * Initialize a system with the given temperature and scale it in steps of delta to the target temperature.
  * @param initialTemperature
  * @param targetTemperature

@@ -18,7 +18,7 @@
  */
 namespace Thermostat {
 /**
- * Calculates temperature of system.
+ * Calculates the temperature of the system.
  * Assuming dimension-less units and Boltzmann constant = 1.
  * @tparam AutoPasTemplate Type of AutoPas Object (no pointer)
  * @tparam ParticlePropertiesLibraryTemplate Type of ParticlePropertiesLibrary Object (no pointer)
@@ -31,7 +31,7 @@ double calcTemperature(const AutoPasTemplate &autopas, ParticlePropertiesLibrary
   // kinetic energy times 2
   double kineticEnergyMul2 = 0;
   AUTOPAS_OPENMP(parallel reduction(+ : kineticEnergyMul2) default(none) shared(autopas, particlePropertiesLibrary))
-  for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
+  for (auto iter = autopas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     const auto vel = iter->getV();
 #if MD_FLEXIBLE_MODE == MULTISITE
     const auto angVel = iter->getAngularVel();
@@ -55,9 +55,9 @@ double calcTemperature(const AutoPasTemplate &autopas, ParticlePropertiesLibrary
 }
 
 /**
- * Calculates temperature of system, for each component separately.
+ * Calculates the temperature of the system, for each component separately.
  *
- * Kinetic Energy for each molecule is
+ * The kinetic energy for each molecule is
  *    1/2 * mass * dot(vel, vel) + 1/2 Sum_{0 <= i < 3} MoI_i * angVel_i^2
  * where MoI is the diagonal Moment of Inertia. This formula comes from Rapport, The Art of MD, equation (8.2.34).
  *
@@ -103,7 +103,7 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
       numParticleMapThread[typeID] = 0ul;
     }
     // parallel iterators
-    for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
+    for (auto iter = autopas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
       const auto &vel = iter->getV();
       kineticEnergyMul2MapThread.at(iter->getTypeId()) +=
           particlePropertiesLibrary.getMolMass(iter->getTypeId()) * dot(vel, vel);
